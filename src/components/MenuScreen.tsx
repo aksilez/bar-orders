@@ -23,6 +23,16 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
   const [form, setForm] = useState<FormState | null>(null)
   const [catName, setCatName] = useState<string | null>(null)
   const [editingCat, setEditingCat] = useState<Category | null>(null)
+  const [collapsed, setCollapsed] = useState<Set<Category>>(new Set())
+
+  function toggleCollapsed(cat: Category) {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(cat)) next.delete(cat)
+      else next.add(cat)
+      return next
+    })
+  }
 
   const parsedPrice = form ? parseFloat(form.price.replace(',', '.')) : NaN
   const formValid =
@@ -74,14 +84,24 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
 
       {categories.map((cat) => {
         const inCat = sortProducts(products.filter((p) => p.category === cat))
+        const isCollapsed = collapsed.has(cat)
         return (
           <section key={cat} className="cat-section">
-            <button className="cat-head-btn" onClick={() => setEditingCat(cat)}>
-              <h3>{cat}</h3>
-              <span className="cat-chevron">›</span>
-            </button>
-            {inCat.length === 0 && <p className="hint">{t('emptyCategory')}</p>}
-            {inCat.map((p) => (
+            <div className="cat-head">
+              <button className="cat-head-btn" onClick={() => setEditingCat(cat)}>
+                <h3>{cat}</h3>
+                <span className="cat-count">{inCat.length}</span>
+              </button>
+              <button
+                className={'cat-collapse' + (isCollapsed ? '' : ' open')}
+                aria-label={isCollapsed ? 'expand' : 'collapse'}
+                onClick={() => toggleCollapsed(cat)}
+              >
+                ›
+              </button>
+            </div>
+            {!isCollapsed && inCat.length === 0 && <p className="hint">{t('emptyCategory')}</p>}
+            {!isCollapsed && inCat.map((p) => (
               <div className="product-row" key={p.id}>
                 <button
                   className={'star-btn' + (p.favorite ? ' on' : '')}

@@ -48,14 +48,14 @@ export default function SummaryScreen({ history, dispatch }: Props) {
     .sort((a, b) => b.paidAt - a.paidAt)
   const revenue = orders.reduce((sum, o) => sum + o.total, 0)
 
-  // Days that actually have orders — the native select pops the iOS wheel picker.
-  const days = useMemo(() => {
+  // Days that actually have orders — only these are tappable in the calendar.
+  const daysWithOrders = useMemo(() => {
     const byDay = new Map<string, number>()
     for (const o of history) {
       const key = isoDay(new Date(o.paidAt))
       byDay.set(key, (byDay.get(key) ?? 0) + 1)
     }
-    return [...byDay.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    return byDay
   }, [history])
 
   const dayLabel =
@@ -70,15 +70,6 @@ export default function SummaryScreen({ history, dispatch }: Props) {
             year: 'numeric',
           })
 
-  function fmtIsoDay(iso: string): string {
-    const [y, m, d] = iso.split('-').map(Number)
-    return new Date(y, m - 1, d).toLocaleDateString(locale, {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'numeric',
-      year: 'numeric',
-    })
-  }
 
   return (
     <div className="screen">
@@ -102,7 +93,7 @@ export default function SummaryScreen({ history, dispatch }: Props) {
           aria-label={t('deleteHistory')}
           disabled={history.length === 0}
           onClick={() => {
-            setPickedDay(days[0]?.[0] ?? '')
+            setPickedDay('')
             setPinOpen(true)
           }}
         >
@@ -160,13 +151,12 @@ export default function SummaryScreen({ history, dispatch }: Props) {
             />
             <div className="field">
               <label>{t('pickDay')}</label>
-              <select value={pickedDay} onChange={(e) => setPickedDay(e.target.value)}>
-                {days.map(([iso, count]) => (
-                  <option key={iso} value={iso}>
-                    {fmtIsoDay(iso)} · {t('ordersCount', String(count))}
-                  </option>
-                ))}
-              </select>
+              <CalendarPicker
+                daysWithOrders={daysWithOrders}
+                selected={pickedDay}
+                onSelect={setPickedDay}
+                locale={locale}
+              />
             </div>
             <ConfirmButton
               label={t('deletePickedDay')}
@@ -197,6 +187,86 @@ export default function SummaryScreen({ history, dispatch }: Props) {
   )
 }
 
+function CalendarPicker({
+  daysWithOrders,
+  selected,
+  onSelect,
+  locale,
+}: {
+  daysWithOrders: Map<string, number>
+  selected: string
+  onSelect: (iso: string) => void
+  locale: string
+}) {
+  const now = new Date()
+  const [viewYear, setViewYear] = useState(now.getFullYear())
+  const [viewMonth, setViewMonth] = useState(now.getMonth())
+
+  const first = new Date(viewYear, viewMonth, 1)
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const leadingBlanks = (first.getDay() + 6) % 7 // Monday-first
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth()
+
+  // Monday-first weekday labels in the active language (2024-01-01 was a Monday).
+  const dowLabels = Array.from({ length: 7 }, (_, i) =>
+    new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' })
+  )
+
+  function shiftMonth(delta: number) {
+    const d = new Date(viewYear, viewMonth + delta, 1)
+    setViewYear(d.getFullYear())
+    setViewMonth(d.getMonth())
+  }
+
+  return (
+    <div className="calendar">
+      <div className="cal-header">
+        <button className="btn small" onClick={() => shiftMonth(-1)} aria-label="Previous month">
+          ‹
+        </button>
+        <span className="cal-title">
+          {first.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
+        </span>
+        <button
+          className="btn small"
+          disabled={isCurrentMonth}
+          onClick={() => shiftMonth(1)}
+          aria-label="Next month"
+        >
+          ›
+        </button>
+      </div>
+      <div className="cal-grid">
+        {dowLabels.map((label, i) => (
+          <span key={'dow' + i} className="cal-dow">
+            {label}
+          </span>
+        ))}
+        {Array.from({ length: leadingBlanks }, (_, i) => (
+          <span key={'blank' + i} />
+        ))}
+        {Array.from({ length: daysInMonth }, (_, i) => {
+          const day = i + 1
+          const iso = isoDay(new Date(viewYear, viewMonth, day))
+          const hasOrders = daysWithOrders.has(iso)
+          return (
+            <button
+              key={iso}
+              className={
+                'cal-day' + (hasOrders ? ' has-orders' : '') + (iso === selected ? ' selected' : '')
+              }
+              disabled={!hasOrders}
+              onClick={() => onSelect(iso === selected ? '' : iso)}
+            >
+              {day}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function PinModal({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) {
   const t = useT()
   const [pin, setPin] = useState('')
@@ -220,11 +290,17 @@ function PinModal({ onSuccess, onClose }: { onSuccess: () => void; onClose: () =
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal pin-modal" onClick={(e) => e.stopPropagation()}>
         <h3>{t('enterPin')}</h3>
+        {/* type="text" + CSS text-security instead of type="password", so the
+            browser/iOS keychain never offers to save or autofill the PIN */}
         <input
           className={'pin-input' + (wrong ? ' wrong' : '')}
-          type="password"
+          type="text"
           inputMode="numeric"
           pattern="[0-9]*"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          name="one-time-entry"
           autoFocus
           maxLength={4}
           value={pin}

@@ -598,25 +598,72 @@ button {
   margin: 18px 0 8px;
 }
 
+.cat-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 4px;
+}
+
 .cat-head-btn {
   display: flex;
   align-items: center;
   gap: 10px;
   background: none;
   border: none;
-  padding: 6px 0;
-  margin: 12px 0 4px;
+  padding: 6px 14px;
+  margin-left: -14px;
   min-height: 44px;
+  border-radius: 12px;
+  transition: background 0.15s ease, transform 0.08s ease;
+}
+
+.cat-head-btn:hover {
+  background: var(--panel-2);
+}
+
+.cat-head-btn:active {
+  background: var(--panel-2);
+  transform: scale(0.97);
 }
 
 .cat-head-btn h3 {
   margin: 0;
 }
 
-.cat-chevron {
+.cat-count {
+  min-width: 26px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--panel-2);
   color: var(--muted);
-  font-size: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.cat-collapse {
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 24px;
   line-height: 1;
+  transition: transform 0.2s ease, background 0.15s ease;
+}
+
+.cat-collapse.open {
+  transform: rotate(90deg);
+}
+
+.cat-collapse:hover {
+  background: var(--panel-2);
+}
+
+.cat-collapse:active {
+  background: var(--panel-2);
 }
 
 .star-btn {
@@ -914,17 +961,19 @@ button {
 }
 
 .pin-input {
-  width: 200px;
-  min-height: 60px;
-  border-radius: 12px;
+  width: 132px;
+  min-height: 48px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--bg);
-  font-size: 34px;
-  letter-spacing: 14px;
+  font-size: 22px;
+  letter-spacing: 10px;
   text-align: center;
-  padding: 0 0 0 14px;
+  padding: 0 0 0 10px;
   -webkit-user-select: text;
   user-select: text;
+  /* dots instead of characters without type="password", so no keychain prompts */
+  -webkit-text-security: disc;
 }
 
 .pin-input.wrong {
@@ -955,4 +1004,79 @@ button {
   75% {
     transform: translateX(8px);
   }
+}
+
+/* ---------- Calendar (delete-history day picker) ---------- */
+
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-header .btn {
+  min-width: 48px;
+  font-size: 20px;
+}
+
+.cal-title {
+  flex: 1;
+  text-align: center;
+  font-weight: 700;
+  font-size: 17px;
+  text-transform: capitalize;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-dow {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 4px 0;
+}
+
+.cal-day {
+  min-height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+
+.cal-day:disabled {
+  color: var(--muted);
+  opacity: 0.35;
+}
+
+.cal-day.has-orders {
+  background: var(--panel-2);
+}
+
+.cal-day.has-orders:active {
+  transform: scale(0.92);
+}
+
+.cal-day.selected {
+  background: var(--accent);
+  color: #fff;
 }
