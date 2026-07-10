@@ -44,28 +44,97 @@ interface DragInfo {
   lastYPx: number
 }
 
+type Corner = 'nw' | 'ne' | 'sw' | 'se'
+const CORNERS: Corner[] = ['nw', 'ne', 'sw', 'se']
+
+interface Geom {
+  leftPx: number
+  topPx: number
+  w: number
+  h: number
+}
+
 interface ResizeInfo {
   kind: Kind
   id: string
-  startX: number
-  startY: number
-  origW: number
-  origH: number
-  maxW: number
-  maxH: number
-  lastW: number
-  lastH: number
-  /** Lines may stay thin (LINE_THICKNESS) — boxes/tables snap to grid minimums. */
+  corner: Corner
   line: boolean
-}
-
-/** Lines keep sub-grid thickness; anything close to a cell snaps to the grid. */
-function snapLineDim(v: number): number {
-  return v < GRID * 0.75 ? LINE_THICKNESS : Math.round(v / GRID) * GRID
+  planW: number
+  planH: number
+  origLeft: number
+  origTop: number
+  origRight: number
+  origBottom: number
+  last: Geom | null
 }
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
 const snap = (v: number) => Math.round(v / GRID) * GRID
+
+/** Live geometry while dragging a corner; the opposite corner stays anchored. */
+function computeResize(r: ResizeInfo, pointerX: number, pointerY: number): Geom {
+  const dragEast = r.corner === 'ne' || r.corner === 'se'
+  const dragSouth = r.corner === 'sw' || r.corner === 'se'
+  const minW = r.line ? LINE_THICKNESS : MIN_W
+  const minH = r.line ? LINE_THICKNESS : MIN_H
+  const anchorX = dragEast ? r.origLeft : r.origRight
+  const anchorY = dragSouth ? r.origTop : r.origBottom
+  const px = clamp(pointerX, 0, r.planW)
+  const py = clamp(pointerY, 0, r.planH)
+
+  let left: number
+  let right: number
+  if (dragEast) {
+    left = anchorX
+    right = clamp(px, anchorX + minW, r.planW)
+  } else {
+    right = anchorX
+    left = clamp(px, 0, anchorX - minW)
+  }
+  let top: number
+  let bottom: number
+  if (dragSouth) {
+    top = anchorY
+    bottom = clamp(py, anchorY + minH, r.planH)
+  } else {
+    bottom = anchorY
+    top = clamp(py, 0, anchorY - minH)
+  }
+
+  let w = right - left
+  let h = bottom - top
+  // A line always collapses its shorter axis to a thin bar (orientation follows the drag).
+  if (r.line) {
+    if (w >= h) {
+      h = LINE_THICKNESS
+      top = dragSouth ? top : bottom - LINE_THICKNESS
+    } else {
+      w = LINE_THICKNESS
+      left = dragEast ? left : right - LINE_THICKNESS
+    }
+  }
+  return { leftPx: left, topPx: top, w, h }
+}
+
+/** Snap a finished resize to the grid; lines keep their thin axis. */
+function snapGeom(g: Geom, line: boolean, planW: number, planH: number): Geom {
+  let { w, h } = g
+  if (line) {
+    if (w >= h) {
+      w = Math.max(GRID, snap(w))
+      h = LINE_THICKNESS
+    } else {
+      h = Math.max(GRID, snap(h))
+      w = LINE_THICKNESS
+    }
+  } else {
+    w = Math.max(MIN_W, snap(w))
+    h = Math.max(MIN_H, snap(h))
+  }
+  const leftPx = clamp(snap(g.leftPx), 0, Math.max(0, planW - w))
+  const topPx = clamp(snap(g.topPx), 0, Math.max(0, planH - h))
+  return { leftPx, topPx, w, h }
+}
 
 export default function FloorPlan({ area, tables, objects, editMode, dispatch, onOpenTable }: Props) {
   const t = useT()
@@ -157,58 +226,58 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
     dispatchMove(kind, item.id, (xPx / rect.width) * 100, (yPx / rect.height) * 100)
   }
 
+  function applyGeom(kind: Kind, id: string, g: Geom, planW: number, planH: number) {
+    dispatchMove(kind, id, (g.leftPx / planW) * 100, (g.topPx / planH) * 100)
+    dispatchResize(kind, id, g.w, g.h)
+  }
+
   function onResizeDown(
     e: React.PointerEvent<HTMLDivElement>,
     kind: Kind,
     item: FloorItem,
-    line: boolean
+    line: boolean,
+    corner: Corner
   ) {
     e.stopPropagation()
     capture(e)
     const plan = planRef.current
     if (!plan) return
     const rect = plan.getBoundingClientRect()
+    const left = (item.x / 100) * rect.width
+    const top = (item.y / 100) * rect.height
     resize.current = {
       kind,
       id: item.id,
-      startX: e.clientX,
-      startY: e.clientY,
-      origW: item.w,
-      origH: item.h,
-      maxW: rect.width - (item.x / 100) * rect.width,
-      maxH: rect.height - (item.y / 100) * rect.height,
-      lastW: item.w,
-      lastH: item.h,
+      corner,
       line,
+      planW: rect.width,
+      planH: rect.height,
+      origLeft: left,
+      origTop: top,
+      origRight: left + item.w,
+      origBottom: top + item.h,
+      last: null,
     }
     setResizingId(item.id)
   }
 
   function onResizeMove(e: React.PointerEvent<HTMLDivElement>) {
     const r = resize.current
-    if (!r) return
-    // resize freely — snapping happens on release
-    const minW = r.line ? LINE_THICKNESS : MIN_W
-    const minH = r.line ? LINE_THICKNESS : MIN_H
-    const w = clamp(r.origW + e.clientX - r.startX, minW, Math.max(minW, r.maxW))
-    const h = clamp(r.origH + e.clientY - r.startY, minH, Math.max(minH, r.maxH))
-    r.lastW = w
-    r.lastH = h
-    dispatchResize(r.kind, r.id, w, h)
+    const plan = planRef.current
+    if (!r || !plan) return
+    const rect = plan.getBoundingClientRect()
+    const g = computeResize(r, e.clientX - rect.left, e.clientY - rect.top)
+    r.last = g
+    applyGeom(r.kind, r.id, g, r.planW, r.planH)
   }
 
-  function onResizeUp(kind: Kind, item: FloorItem) {
+  function onResizeUp() {
     const r = resize.current
     resize.current = null
     setResizingId(null)
-    if (!r) return
-    const w = r.line
-      ? clamp(snapLineDim(r.lastW), LINE_THICKNESS, Math.max(LINE_THICKNESS, r.maxW))
-      : clamp(snap(r.lastW), MIN_W, Math.max(MIN_W, snap(r.maxW)))
-    const h = r.line
-      ? clamp(snapLineDim(r.lastH), LINE_THICKNESS, Math.max(LINE_THICKNESS, r.maxH))
-      : clamp(snap(r.lastH), MIN_H, Math.max(MIN_H, snap(r.maxH)))
-    dispatchResize(kind, item.id, w, h)
+    if (!r || !r.last) return
+    // snap into the grid — the transition animates the item into place
+    applyGeom(r.kind, r.id, snapGeom(r.last, r.line, r.planW, r.planH), r.planW, r.planH)
   }
 
   function itemHandlers(kind: Kind, item: FloorItem) {
@@ -223,16 +292,17 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
     }
   }
 
-  function resizeHandle(kind: Kind, item: FloorItem, line = false) {
-    return (
+  function resizeHandles(kind: Kind, item: FloorItem, line = false) {
+    return CORNERS.map((corner) => (
       <div
-        className="resize-handle"
-        onPointerDown={(e) => onResizeDown(e, kind, item, line)}
+        key={corner}
+        className={'resize-handle rh-' + corner}
+        onPointerDown={(e) => onResizeDown(e, kind, item, line, corner)}
         onPointerMove={onResizeMove}
-        onPointerUp={() => onResizeUp(kind, item)}
-        onPointerCancel={() => onResizeUp(kind, item)}
+        onPointerUp={onResizeUp}
+        onPointerCancel={onResizeUp}
       />
-    )
+    ))
   }
 
   return (
@@ -262,7 +332,7 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
               {...(editMode ? itemHandlers('object', o) : {})}
             >
               {!line && <span className="object-name">{o.name}</span>}
-              {editMode && resizeHandle('object', o, line)}
+              {editMode && resizeHandles('object', o, line)}
             </div>
           )
         })}
@@ -289,7 +359,7 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
               ) : (
                 <div className="table-free">{t('free')}</div>
               )}
-              {editMode && resizeHandle('table', tb)}
+              {editMode && resizeHandles('table', tb)}
             </div>
           )
         })}

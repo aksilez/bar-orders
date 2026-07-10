@@ -383,16 +383,40 @@ button {
   box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--text);
 }
 
+/* Four corner grips — resize from any side; the opposite corner stays anchored. */
 .resize-handle {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
-  width: 36px;
-  height: 36px;
-  border-right: 5px solid var(--accent);
-  border-bottom: 5px solid var(--accent);
-  border-bottom-right-radius: 16px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--panel);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   touch-action: none;
+  z-index: 2;
+}
+
+.rh-nw {
+  left: -13px;
+  top: -13px;
+  cursor: nwse-resize;
+}
+
+.rh-ne {
+  right: -13px;
+  top: -13px;
+  cursor: nesw-resize;
+}
+
+.rh-sw {
+  left: -13px;
+  bottom: -13px;
+  cursor: nesw-resize;
+}
+
+.rh-se {
+  right: -13px;
+  bottom: -13px;
   cursor: nwse-resize;
 }
 
