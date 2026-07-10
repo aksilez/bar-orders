@@ -205,7 +205,9 @@ function CalendarPicker({
   const first = new Date(viewYear, viewMonth, 1)
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
   const leadingBlanks = (first.getDay() + 6) % 7 // Monday-first
-  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth()
+  const isCurrentYear = viewYear >= now.getFullYear()
+  // don't let the month arrow jump into a future month within the current year
+  const nextMonthInFuture = viewYear === now.getFullYear() && viewMonth >= now.getMonth()
 
   // Monday-first weekday labels in the active language (2024-01-01 was a Monday).
   const dowLabels = Array.from({ length: 7 }, (_, i) =>
@@ -218,9 +220,26 @@ function CalendarPicker({
     setViewMonth(d.getMonth())
   }
 
+  function shiftYear(delta: number) {
+    let y = viewYear + delta
+    let m = viewMonth
+    // clamp so we never land in a future month
+    if (y > now.getFullYear()) {
+      y = now.getFullYear()
+      m = now.getMonth()
+    } else if (y === now.getFullYear() && m > now.getMonth()) {
+      m = now.getMonth()
+    }
+    setViewYear(y)
+    setViewMonth(m)
+  }
+
   return (
     <div className="calendar">
       <div className="cal-header">
+        <button className="btn small" onClick={() => shiftYear(-1)} aria-label="Previous year">
+          ‹‹
+        </button>
         <button className="btn small" onClick={() => shiftMonth(-1)} aria-label="Previous month">
           ‹
         </button>
@@ -229,11 +248,19 @@ function CalendarPicker({
         </span>
         <button
           className="btn small"
-          disabled={isCurrentMonth}
+          disabled={nextMonthInFuture}
           onClick={() => shiftMonth(1)}
           aria-label="Next month"
         >
           ›
+        </button>
+        <button
+          className="btn small"
+          disabled={isCurrentYear}
+          onClick={() => shiftYear(1)}
+          aria-label="Next year"
+        >
+          ››
         </button>
       </div>
       <div className="cal-grid">

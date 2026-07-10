@@ -322,21 +322,33 @@ button {
   transition: left 0.25s ease, top 0.25s ease, border-color 0.15s ease;
 }
 
+/* In edit mode objects sit above tables so a newly added one is never hidden. */
 .floor-object.editing {
   pointer-events: auto;
   touch-action: none;
   border-style: dashed;
+  z-index: 6;
 }
 
 .floor-object.dragging,
 .floor-object.resizing {
   transition: none;
-  z-index: 4;
+  z-index: 8;
+}
+
+.floor-object.line {
+  border-radius: 3px;
+  padding: 0;
+}
+
+.floor-object.line.editing {
+  outline: 2px dashed var(--muted);
+  outline-offset: 3px;
 }
 
 .object-name {
-  font-weight: 600;
-  font-size: 15px;
+  font-weight: 700;
+  font-size: 19px;
   color: var(--text);
   max-width: 100%;
   overflow: hidden;
@@ -686,16 +698,18 @@ button {
   margin: 18px 0 8px;
 }
 
-/* Category header — a full card row: name opens editing, chevron collapses. */
+/* Category header — a bold accent-tinted band, clearly above the product rows. */
 .cat-head {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 16px 0 8px;
-  padding: 4px 6px 4px 8px;
-  background: var(--panel);
+  margin: 24px 0 10px;
+  padding: 2px 6px 2px 0;
+  background: var(--panel-2);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-left: 5px solid var(--accent);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .cat-head-btn {
@@ -705,23 +719,26 @@ button {
   text-align: left;
   background: none;
   border: none;
-  padding: 8px 12px;
-  min-height: 48px;
-  border-radius: 10px;
+  padding: 10px 14px;
+  min-height: 52px;
   transition: background 0.15s ease, transform 0.08s ease;
 }
 
 .cat-head-btn:hover {
-  background: var(--panel-2);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .cat-head-btn:active {
-  background: var(--panel-2);
+  background: rgba(255, 255, 255, 0.08);
   transform: scale(0.99);
 }
 
 .cat-head-btn h3 {
   margin: 0;
+  color: var(--text);
+  text-transform: none;
+  font-size: 21px;
+  letter-spacing: 0;
 }
 
 .cat-collapse {

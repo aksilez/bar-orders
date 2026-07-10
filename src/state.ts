@@ -1,5 +1,13 @@
 import type { Area, AppState, Category, FloorObject, PaidOrder, Product, Table } from './types'
-import { DEFAULT_TABLE_H, DEFAULT_TABLE_W, GRID, OBJECT_COLORS, orderTotal, uid } from './types'
+import {
+  DEFAULT_TABLE_H,
+  DEFAULT_TABLE_W,
+  GRID,
+  LINE_THICKNESS,
+  OBJECT_COLORS,
+  orderTotal,
+  uid,
+} from './types'
 
 export const DEFAULT_CATEGORIES: Category[] = ['Beer', 'Soft drinks', 'Spirits', 'Food', 'Other']
 
@@ -10,7 +18,7 @@ export type Action =
   | { type: 'deleteTable'; id: string }
   | { type: 'moveTable'; id: string; x: number; y: number }
   | { type: 'resizeTable'; id: string; w: number; h: number }
-  | { type: 'addObject'; area: Area; baseName: string }
+  | { type: 'addObject'; area: Area; baseName: string; variant: 'box' | 'line' }
   | { type: 'updateObject'; id: string; name: string; color: string }
   | { type: 'moveObject'; id: string; x: number; y: number }
   | { type: 'resizeObject'; id: string; w: number; h: number }
@@ -87,15 +95,17 @@ export function reducer(state: AppState, action: Action): AppState {
       const inArea = state.objects.filter((o) => o.area === action.area).length
       let n = 1
       while (state.objects.some((o) => o.name === `${action.baseName} ${n}`)) n++
+      const line = action.variant === 'line'
       const object: FloorObject = {
         id: uid(),
-        name: `${action.baseName} ${n}`,
+        name: line ? '' : `${action.baseName} ${n}`,
         area: action.area,
-        x: 6 + (inArea % 4) * 23,
-        y: 60,
-        w: GRID * 4,
-        h: GRID * 2,
+        x: 8 + (inArea % 4) * 20,
+        y: 38 + (inArea % 3) * 8,
+        w: line ? GRID * 6 : GRID * 4,
+        h: line ? LINE_THICKNESS : GRID * 2,
         color: OBJECT_COLORS[0],
+        variant: action.variant,
       }
       return { ...state, objects: [...state.objects, object] }
     }
@@ -293,11 +303,12 @@ export function migrate(saved: Partial<AppState>): AppState {
     w: t.w ?? DEFAULT_TABLE_W,
     h: t.h ?? DEFAULT_TABLE_H,
   }))
+  const objects = (saved.objects ?? []).map((o) => ({ ...o, variant: o.variant ?? 'box' as const }))
   return {
     products,
     categories,
     tables,
-    objects: saved.objects ?? [],
+    objects,
     history: saved.history ?? [],
   }
 }

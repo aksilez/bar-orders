@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { Area, FloorObject, Table } from '../types'
-import { GRID, OBJECT_COLORS, fmtEur, orderTotal } from '../types'
+import { GRID, LINE_THICKNESS, OBJECT_COLORS, fmtEur, orderTotal } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
 import ConfirmButton from './ConfirmButton'
@@ -55,6 +55,13 @@ interface ResizeInfo {
   maxH: number
   lastW: number
   lastH: number
+  /** Lines may stay thin (LINE_THICKNESS) — boxes/tables snap to grid minimums. */
+  line: boolean
+}
+
+/** Lines keep sub-grid thickness; anything close to a cell snaps to the grid. */
+function snapLineDim(v: number): number {
+  return v < GRID * 0.75 ? LINE_THICKNESS : Math.round(v / GRID) * GRID
 }
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
@@ -150,7 +157,12 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
     dispatchMove(kind, item.id, (xPx / rect.width) * 100, (yPx / rect.height) * 100)
   }
 
-  function onResizeDown(e: React.PointerEvent<HTMLDivElement>, kind: Kind, item: FloorItem) {
+  function onResizeDown(
+    e: React.PointerEvent<HTMLDivElement>,
+    kind: Kind,
+    item: FloorItem,
+    line: boolean
+  ) {
     e.stopPropagation()
     capture(e)
     const plan = planRef.current
@@ -167,6 +179,7 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
       maxH: rect.height - (item.y / 100) * rect.height,
       lastW: item.w,
       lastH: item.h,
+      line,
     }
     setResizingId(item.id)
   }
@@ -175,8 +188,10 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
     const r = resize.current
     if (!r) return
     // resize freely — snapping happens on release
-    const w = clamp(r.origW + e.clientX - r.startX, MIN_W, Math.max(MIN_W, r.maxW))
-    const h = clamp(r.origH + e.clientY - r.startY, MIN_H, Math.max(MIN_H, r.maxH))
+    const minW = r.line ? LINE_THICKNESS : MIN_W
+    const minH = r.line ? LINE_THICKNESS : MIN_H
+    const w = clamp(r.origW + e.clientX - r.startX, minW, Math.max(minW, r.maxW))
+    const h = clamp(r.origH + e.clientY - r.startY, minH, Math.max(minH, r.maxH))
     r.lastW = w
     r.lastH = h
     dispatchResize(r.kind, r.id, w, h)
@@ -187,8 +202,12 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
     resize.current = null
     setResizingId(null)
     if (!r) return
-    const w = clamp(snap(r.lastW), MIN_W, Math.max(MIN_W, snap(r.maxW)))
-    const h = clamp(snap(r.lastH), MIN_H, Math.max(MIN_H, snap(r.maxH)))
+    const w = r.line
+      ? clamp(snapLineDim(r.lastW), LINE_THICKNESS, Math.max(LINE_THICKNESS, r.maxW))
+      : clamp(snap(r.lastW), MIN_W, Math.max(MIN_W, snap(r.maxW)))
+    const h = r.line
+      ? clamp(snapLineDim(r.lastH), LINE_THICKNESS, Math.max(LINE_THICKNESS, r.maxH))
+      : clamp(snap(r.lastH), MIN_H, Math.max(MIN_H, snap(r.maxH)))
     dispatchResize(kind, item.id, w, h)
   }
 
@@ -204,11 +223,11 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
     }
   }
 
-  function resizeHandle(kind: Kind, item: FloorItem) {
+  function resizeHandle(kind: Kind, item: FloorItem, line = false) {
     return (
       <div
         className="resize-handle"
-        onPointerDown={(e) => onResizeDown(e, kind, item)}
+        onPointerDown={(e) => onResizeDown(e, kind, item, line)}
         onPointerMove={onResizeMove}
         onPointerUp={() => onResizeUp(kind, item)}
         onPointerCancel={() => onResizeUp(kind, item)}
@@ -219,29 +238,34 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
   return (
     <div className="floor-wrap">
       <div className="floor" ref={planRef}>
-        {objects.map((o) => (
-          <div
-            key={o.id}
-            className={
-              'floor-object' +
-              (editMode ? ' editing' : '') +
-              (draggingId === o.id ? ' dragging' : '') +
-              (resizingId === o.id ? ' resizing' : '')
-            }
-            style={{
-              left: o.x + '%',
-              top: o.y + '%',
-              width: o.w,
-              height: o.h,
-              borderColor: o.color,
-              background: o.color + '26',
-            }}
-            {...(editMode ? itemHandlers('object', o) : {})}
-          >
-            <span className="object-name">{o.name}</span>
-            {editMode && resizeHandle('object', o)}
-          </div>
-        ))}
+        {objects.map((o) => {
+          const line = o.variant === 'line'
+          return (
+            <div
+              key={o.id}
+              className={
+                'floor-object' +
+                (line ? ' line' : '') +
+                (editMode ? ' editing' : '') +
+                (draggingId === o.id ? ' dragging' : '') +
+                (resizingId === o.id ? ' resizing' : '')
+              }
+              style={{
+                left: o.x + '%',
+                top: o.y + '%',
+                width: o.w,
+                height: o.h,
+                ...(line
+                  ? { background: o.color, border: 'none' }
+                  : { borderColor: o.color, background: o.color + '26' }),
+              }}
+              {...(editMode ? itemHandlers('object', o) : {})}
+            >
+              {!line && <span className="object-name">{o.name}</span>}
+              {editMode && resizeHandle('object', o, line)}
+            </div>
+          )
+        })}
 
         {tables.map((tb) => {
           const active = tb.order.length > 0
@@ -287,9 +311,19 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
           </button>
           <button
             className="btn"
-            onClick={() => dispatch({ type: 'addObject', area, baseName: t('objectBase') })}
+            onClick={() =>
+              dispatch({ type: 'addObject', area, baseName: t('objectBase'), variant: 'box' })
+            }
           >
             {t('addObject')}
+          </button>
+          <button
+            className="btn"
+            onClick={() =>
+              dispatch({ type: 'addObject', area, baseName: t('objectBase'), variant: 'line' })
+            }
+          >
+            {t('addLine')}
           </button>
         </div>
       )}
@@ -378,28 +412,33 @@ function EditObjectModal({
   onClose: () => void
 }) {
   const t = useT()
+  const isLine = object.variant === 'line'
   const [name, setName] = useState(object.name)
   const [color, setColor] = useState(object.color)
 
   function save() {
+    // lines have no name; boxes keep their old name if the field is emptied
     const trimmed = name.trim()
-    if (trimmed) dispatch({ type: 'updateObject', id: object.id, name: trimmed, color })
+    const nextName = isLine ? '' : trimmed || object.name
+    dispatch({ type: 'updateObject', id: object.id, name: nextName, color })
     onClose()
   }
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>{t('editObject')}</h3>
-        <div className="field">
-          <label>{t('objectName')}</label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-            onKeyDown={(e) => e.key === 'Enter' && save()}
-          />
-        </div>
+        <h3>{isLine ? t('editLine') : t('editObject')}</h3>
+        {!isLine && (
+          <div className="field">
+            <label>{t('objectName')}</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && save()}
+            />
+          </div>
+        )}
         <div className="field">
           <label>{t('color')}</label>
           <div className="color-row">
@@ -426,7 +465,7 @@ function EditObjectModal({
           <button className="btn" onClick={onClose}>
             {t('cancel')}
           </button>
-          <button className="btn primary" disabled={!name.trim()} onClick={save}>
+          <button className="btn primary" disabled={!isLine && !name.trim()} onClick={save}>
             {t('save')}
           </button>
         </div>

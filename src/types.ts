@@ -41,7 +41,11 @@ export interface FloorObject {
   w: number
   h: number
   color: string
+  /** 'line' = solid thin bar (wall/divider), no name. Default 'box'. */
+  variant?: 'box' | 'line'
 }
+
+export const LINE_THICKNESS = 8
 
 export const OBJECT_COLORS = [
   '#9b9b9b',
