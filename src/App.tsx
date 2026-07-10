@@ -150,7 +150,7 @@ export default function App() {
         {toast && (
           <div className="toast">
             <span className="toast-text">
-              ✓ {t('paidToast', toast.tableName)} · {fmtEur(toast.total)}
+              ✓ {t('paidToast', toast.tableName)} – {fmtEur(toast.total)}
             </span>
             <button
               className="btn small"
