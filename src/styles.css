@@ -192,10 +192,6 @@ button {
   color: #fff;
 }
 
-.remove-btn.armed {
-  border-radius: 12px;
-}
-
 .btn:disabled {
   opacity: 0.4;
   cursor: default;
@@ -219,19 +215,35 @@ button {
 /* ---------- Floor plan ---------- */
 
 .floor-wrap {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
+/* Floating translucent pill — overlays the floor without shifting the layout. */
 .edit-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 14px;
-  background: rgba(240, 165, 49, 0.08);
-  border-bottom: 1px solid var(--border);
+  gap: 10px;
+  padding: 8px;
+  background: rgba(23, 23, 23, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  max-width: calc(100% - 24px);
+}
+
+:root[data-theme='light'] .edit-toolbar {
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .hint {
@@ -296,6 +308,69 @@ button {
   z-index: 5;
 }
 
+/* Decorative floor objects — colored, inert in normal mode. */
+.floor-object {
+  position: absolute;
+  z-index: 0;
+  border: 2px solid;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  pointer-events: none;
+  transition: left 0.25s ease, top 0.25s ease, border-color 0.15s ease;
+}
+
+.floor-object.editing {
+  pointer-events: auto;
+  touch-action: none;
+  border-style: dashed;
+}
+
+.floor-object.dragging,
+.floor-object.resizing {
+  transition: none;
+  z-index: 4;
+}
+
+.object-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-card {
+  z-index: 1;
+}
+
+.color-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  transition: transform 0.08s ease;
+}
+
+.color-swatch:active {
+  transform: scale(0.9);
+}
+
+.color-swatch.selected {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--text);
+}
+
 .resize-handle {
   position: absolute;
   right: -4px;
@@ -311,7 +386,7 @@ button {
 
 .table-name {
   font-weight: 700;
-  font-size: 17px;
+  font-size: 19px;
   max-width: calc(100% - 12px);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -450,10 +525,11 @@ button {
 }
 
 .remove-btn {
-  width: 44px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
   border: none;
+  border-radius: 12px;
   background: none;
   color: var(--red);
   font-size: 20px;
@@ -532,6 +608,18 @@ button {
   color: #fff;
 }
 
+.cat-tab.fav {
+  min-width: 56px;
+  font-size: 20px;
+  color: var(--amber);
+}
+
+.cat-tab.fav.active {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #201502;
+}
+
 .product-grid {
   flex: 1;
   overflow-y: auto;
@@ -598,23 +686,28 @@ button {
   margin: 18px 0 8px;
 }
 
+/* Category header — a full card row: name opens editing, chevron collapses. */
 .cat-head {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 12px 0 4px;
+  margin: 16px 0 8px;
+  padding: 4px 6px 4px 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }
 
 .cat-head-btn {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
+  text-align: left;
   background: none;
   border: none;
-  padding: 6px 14px;
-  margin-left: -14px;
-  min-height: 44px;
-  border-radius: 12px;
+  padding: 8px 12px;
+  min-height: 48px;
+  border-radius: 10px;
   transition: background 0.15s ease, transform 0.08s ease;
 }
 
@@ -624,30 +717,20 @@ button {
 
 .cat-head-btn:active {
   background: var(--panel-2);
-  transform: scale(0.97);
+  transform: scale(0.99);
 }
 
 .cat-head-btn h3 {
   margin: 0;
 }
 
-.cat-count {
-  min-width: 26px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  background: var(--panel-2);
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-  text-align: center;
-}
-
 .cat-collapse {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
   background: none;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--muted);
   font-size: 24px;
   line-height: 1;
@@ -960,29 +1043,67 @@ button {
   align-items: center;
 }
 
-.pin-input {
-  width: 132px;
-  min-height: 48px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  font-size: 22px;
-  letter-spacing: 10px;
-  text-align: center;
-  padding: 0 0 0 10px;
-  -webkit-user-select: text;
-  user-select: text;
-  /* dots instead of characters without type="password", so no keychain prompts */
-  -webkit-text-security: disc;
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  padding: 10px 0 2px;
 }
 
-.pin-input.wrong {
-  border-color: var(--red);
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+}
+
+.pin-dot.filled {
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.pin-dots.wrong {
   animation: pin-shake 0.3s ease;
+}
+
+.pin-dots.wrong .pin-dot {
+  border-color: var(--red);
+}
+
+.pin-dots.wrong .pin-dot.filled {
+  background: var(--red);
+}
+
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 76px);
+  gap: 10px;
+  justify-content: center;
+}
+
+.pin-key {
+  height: 60px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  font-size: 24px;
+  font-weight: 600;
+  transition: transform 0.08s ease, filter 0.08s ease;
+}
+
+.pin-key:active {
+  filter: brightness(1.25);
+  transform: scale(0.94);
+}
+
+.pin-key.backspace {
+  font-size: 20px;
+  color: var(--muted);
 }
 
 .pin-hint {
   min-height: 20px;
+  text-align: center;
 }
 
 .pin-hint.wrong {

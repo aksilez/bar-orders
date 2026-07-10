@@ -4,20 +4,21 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// Mug incl. handle spans columns 2–14, so the visual mass sits centered.
 const ART = [
   '................',
   '................',
-  '..ffffffff......',
-  '.ffffffffff.....',
-  '.ffffffffff.....',
-  '..BLBBBBBB.hh...',
-  '..BLBBBBBB.h.h..',
-  '..BLBBBBBB.h.h..',
-  '..BLBBBBBB.h.h..',
-  '..BLBBBBBB.hh...',
-  '..BLBBBBBB......',
-  '..BLBBBBBB......',
-  '...BBBBBB.......',
+  '...ffffffff.....',
+  '..ffffffffff....',
+  '..ffffffffff....',
+  '...BLBBBBBB.hh..',
+  '...BLBBBBBB.h.h.',
+  '...BLBBBBBB.h.h.',
+  '...BLBBBBBB.h.h.',
+  '...BLBBBBBB.hh..',
+  '...BLBBBBBB.....',
+  '...BLBBBBBB.....',
+  '....BBBBBB......',
   '................',
   '................',
   '................',

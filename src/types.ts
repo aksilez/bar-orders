@@ -31,6 +31,29 @@ export interface OrderItem {
   qty: number
 }
 
+/** Decorative floor-plan object (bar counter, door, plant…) — name + color only. */
+export interface FloorObject {
+  id: string
+  name: string
+  area: Area
+  x: number
+  y: number
+  w: number
+  h: number
+  color: string
+}
+
+export const OBJECT_COLORS = [
+  '#9b9b9b',
+  '#4f8ef7',
+  '#34c77b',
+  '#f0a531',
+  '#e5484d',
+  '#a970ff',
+  '#2bbac5',
+  '#f36fa0',
+]
+
 export interface Table {
   id: string
   name: string
@@ -55,6 +78,7 @@ export interface PaidOrder {
 
 export interface AppState {
   tables: Table[]
+  objects: FloorObject[]
   products: Product[]
   categories: Category[]
   history: PaidOrder[]

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import type { Area, Table } from '../types'
-import { GRID, fmtEur, orderTotal } from '../types'
+import type { Area, FloorObject, Table } from '../types'
+import { GRID, OBJECT_COLORS, fmtEur, orderTotal } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
 import ConfirmButton from './ConfirmButton'
@@ -8,16 +8,29 @@ import ConfirmButton from './ConfirmButton'
 interface Props {
   area: Area
   tables: Table[]
+  objects: FloorObject[]
   editMode: boolean
   dispatch: React.Dispatch<Action>
   onOpenTable: (id: string) => void
 }
 
+type Kind = 'table' | 'object'
+
+/** Common geometry of anything draggable on the floor. */
+interface FloorItem {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
 const TAP_SLOP_PX = 8
-const MIN_W = GRID * 3
+const MIN_W = GRID * 2
 const MIN_H = GRID * 2
 
 interface DragInfo {
+  kind: Kind
   id: string
   startX: number
   startY: number
@@ -26,9 +39,13 @@ interface DragInfo {
   w: number
   h: number
   moved: boolean
+  /** Latest unsnapped position in px — source of truth for the release snap. */
+  lastXPx: number
+  lastYPx: number
 }
 
 interface ResizeInfo {
+  kind: Kind
   id: string
   startX: number
   startY: number
@@ -36,21 +53,37 @@ interface ResizeInfo {
   origH: number
   maxW: number
   maxH: number
+  lastW: number
+  lastH: number
 }
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
 const snap = (v: number) => Math.round(v / GRID) * GRID
 
-export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTable }: Props) {
+export default function FloorPlan({ area, tables, objects, editMode, dispatch, onOpenTable }: Props) {
   const t = useT()
   const planRef = useRef<HTMLDivElement>(null)
   const drag = useRef<DragInfo | null>(null)
   const resize = useRef<ResizeInfo | null>(null)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingTableId, setEditingTableId] = useState<string | null>(null)
+  const [editingObjectId, setEditingObjectId] = useState<string | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [resizingId, setResizingId] = useState<string | null>(null)
 
-  const editingTable = editingId ? tables.find((tb) => tb.id === editingId) ?? null : null
+  const editingTable = editingTableId ? tables.find((tb) => tb.id === editingTableId) ?? null : null
+  const editingObject = editingObjectId
+    ? objects.find((o) => o.id === editingObjectId) ?? null
+    : null
+
+  function dispatchMove(kind: Kind, id: string, x: number, y: number) {
+    dispatch(kind === 'table' ? { type: 'moveTable', id, x, y } : { type: 'moveObject', id, x, y })
+  }
+
+  function dispatchResize(kind: Kind, id: string, w: number, h: number) {
+    dispatch(
+      kind === 'table' ? { type: 'resizeTable', id, w, h } : { type: 'resizeObject', id, w, h }
+    )
+  }
 
   function capture(e: React.PointerEvent<HTMLDivElement>) {
     try {
@@ -60,18 +93,23 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
     }
   }
 
-  function onPointerDown(e: React.PointerEvent<HTMLDivElement>, tb: Table) {
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>, kind: Kind, item: FloorItem) {
     if (!editMode) return
     capture(e)
+    const plan = planRef.current
+    const rect = plan?.getBoundingClientRect()
     drag.current = {
-      id: tb.id,
+      kind,
+      id: item.id,
       startX: e.clientX,
       startY: e.clientY,
-      origX: tb.x,
-      origY: tb.y,
-      w: tb.w,
-      h: tb.h,
+      origX: item.x,
+      origY: item.y,
+      w: item.w,
+      h: item.h,
       moved: false,
+      lastXPx: rect ? (item.x / 100) * rect.width : 0,
+      lastYPx: rect ? (item.y / 100) * rect.height : 0,
     }
   }
 
@@ -88,43 +126,49 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
     const rect = plan.getBoundingClientRect()
     const xPx = clamp((d.origX / 100) * rect.width + dx, 0, rect.width - d.w)
     const yPx = clamp((d.origY / 100) * rect.height + dy, 0, rect.height - d.h)
-    dispatch({ type: 'moveTable', id: d.id, x: (xPx / rect.width) * 100, y: (yPx / rect.height) * 100 })
+    d.lastXPx = xPx
+    d.lastYPx = yPx
+    dispatchMove(d.kind, d.id, (xPx / rect.width) * 100, (yPx / rect.height) * 100)
   }
 
-  function onPointerUp(tb: Table) {
+  function onPointerUp(kind: Kind, item: FloorItem) {
     const d = drag.current
     const plan = planRef.current
     drag.current = null
     setDraggingId(null)
     if (!editMode || !d) return
     if (!d.moved) {
-      setEditingId(tb.id)
+      if (kind === 'table') setEditingTableId(item.id)
+      else setEditingObjectId(item.id)
       return
     }
     if (!plan) return
     // snap into the grid — the transition animates the card into place
     const rect = plan.getBoundingClientRect()
-    const xPx = clamp(snap((tb.x / 100) * rect.width), 0, rect.width - tb.w)
-    const yPx = clamp(snap((tb.y / 100) * rect.height), 0, rect.height - tb.h)
-    dispatch({ type: 'moveTable', id: tb.id, x: (xPx / rect.width) * 100, y: (yPx / rect.height) * 100 })
+    const xPx = clamp(snap(d.lastXPx), 0, rect.width - d.w)
+    const yPx = clamp(snap(d.lastYPx), 0, rect.height - d.h)
+    dispatchMove(kind, item.id, (xPx / rect.width) * 100, (yPx / rect.height) * 100)
   }
 
-  function onResizeDown(e: React.PointerEvent<HTMLDivElement>, tb: Table) {
+  function onResizeDown(e: React.PointerEvent<HTMLDivElement>, kind: Kind, item: FloorItem) {
     e.stopPropagation()
     capture(e)
     const plan = planRef.current
     if (!plan) return
     const rect = plan.getBoundingClientRect()
     resize.current = {
-      id: tb.id,
+      kind,
+      id: item.id,
       startX: e.clientX,
       startY: e.clientY,
-      origW: tb.w,
-      origH: tb.h,
-      maxW: rect.width - (tb.x / 100) * rect.width,
-      maxH: rect.height - (tb.y / 100) * rect.height,
+      origW: item.w,
+      origH: item.h,
+      maxW: rect.width - (item.x / 100) * rect.width,
+      maxH: rect.height - (item.y / 100) * rect.height,
+      lastW: item.w,
+      lastH: item.h,
     }
-    setResizingId(tb.id)
+    setResizingId(item.id)
   }
 
   function onResizeMove(e: React.PointerEvent<HTMLDivElement>) {
@@ -133,34 +177,72 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
     // resize freely — snapping happens on release
     const w = clamp(r.origW + e.clientX - r.startX, MIN_W, Math.max(MIN_W, r.maxW))
     const h = clamp(r.origH + e.clientY - r.startY, MIN_H, Math.max(MIN_H, r.maxH))
-    dispatch({ type: 'resizeTable', id: r.id, w, h })
+    r.lastW = w
+    r.lastH = h
+    dispatchResize(r.kind, r.id, w, h)
   }
 
-  function onResizeUp(tb: Table) {
+  function onResizeUp(kind: Kind, item: FloorItem) {
     const r = resize.current
     resize.current = null
     setResizingId(null)
     if (!r) return
-    const w = clamp(snap(tb.w), MIN_W, Math.max(MIN_W, snap(r.maxW)))
-    const h = clamp(snap(tb.h), MIN_H, Math.max(MIN_H, snap(r.maxH)))
-    dispatch({ type: 'resizeTable', id: tb.id, w, h })
+    const w = clamp(snap(r.lastW), MIN_W, Math.max(MIN_W, snap(r.maxW)))
+    const h = clamp(snap(r.lastH), MIN_H, Math.max(MIN_H, snap(r.maxH)))
+    dispatchResize(kind, item.id, w, h)
+  }
+
+  function itemHandlers(kind: Kind, item: FloorItem) {
+    return {
+      onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => onPointerDown(e, kind, item),
+      onPointerMove,
+      onPointerUp: () => onPointerUp(kind, item),
+      onPointerCancel: () => {
+        drag.current = null
+        setDraggingId(null)
+      },
+    }
+  }
+
+  function resizeHandle(kind: Kind, item: FloorItem) {
+    return (
+      <div
+        className="resize-handle"
+        onPointerDown={(e) => onResizeDown(e, kind, item)}
+        onPointerMove={onResizeMove}
+        onPointerUp={() => onResizeUp(kind, item)}
+        onPointerCancel={() => onResizeUp(kind, item)}
+      />
+    )
   }
 
   return (
     <div className="floor-wrap">
-      {editMode && (
-        <div className="edit-toolbar">
-          <button
-            className="btn primary"
-            onClick={() => dispatch({ type: 'addTable', area, baseName: t('tableBase') })}
-          >
-            {t('addTable')}
-          </button>
-          <span className="hint">{t('floorHint')}</span>
-        </div>
-      )}
-
       <div className="floor" ref={planRef}>
+        {objects.map((o) => (
+          <div
+            key={o.id}
+            className={
+              'floor-object' +
+              (editMode ? ' editing' : '') +
+              (draggingId === o.id ? ' dragging' : '') +
+              (resizingId === o.id ? ' resizing' : '')
+            }
+            style={{
+              left: o.x + '%',
+              top: o.y + '%',
+              width: o.w,
+              height: o.h,
+              borderColor: o.color,
+              background: o.color + '26',
+            }}
+            {...(editMode ? itemHandlers('object', o) : {})}
+          >
+            <span className="object-name">{o.name}</span>
+            {editMode && resizeHandle('object', o)}
+          </div>
+        ))}
+
         {tables.map((tb) => {
           const active = tb.order.length > 0
           return (
@@ -174,13 +256,7 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
                 (resizingId === tb.id ? ' resizing' : '')
               }
               style={{ left: tb.x + '%', top: tb.y + '%', width: tb.w, height: tb.h }}
-              onPointerDown={(e) => onPointerDown(e, tb)}
-              onPointerMove={onPointerMove}
-              onPointerUp={() => onPointerUp(tb)}
-              onPointerCancel={() => {
-                drag.current = null
-                setDraggingId(null)
-              }}
+              {...itemHandlers('table', tb)}
               onClick={() => !editMode && onOpenTable(tb.id)}
             >
               <div className="table-name">{tb.name}</div>
@@ -189,18 +265,11 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
               ) : (
                 <div className="table-free">{t('free')}</div>
               )}
-              {editMode && (
-                <div
-                  className="resize-handle"
-                  onPointerDown={(e) => onResizeDown(e, tb)}
-                  onPointerMove={onResizeMove}
-                  onPointerUp={() => onResizeUp(tb)}
-                  onPointerCancel={() => onResizeUp(tb)}
-                />
-              )}
+              {editMode && resizeHandle('table', tb)}
             </div>
           )
         })}
+
         {tables.length === 0 && (
           <div className="empty">
             {t('noTablesEmpty')} {editMode ? t('noTablesAddHint') : t('noTablesEditHint')}
@@ -208,11 +277,36 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
         )}
       </div>
 
+      {editMode && (
+        <div className="edit-toolbar">
+          <button
+            className="btn primary"
+            onClick={() => dispatch({ type: 'addTable', area, baseName: t('tableBase') })}
+          >
+            {t('addTable')}
+          </button>
+          <button
+            className="btn"
+            onClick={() => dispatch({ type: 'addObject', area, baseName: t('objectBase') })}
+          >
+            {t('addObject')}
+          </button>
+        </div>
+      )}
+
       {editingTable && (
         <EditTableModal
           table={editingTable}
           dispatch={dispatch}
-          onClose={() => setEditingId(null)}
+          onClose={() => setEditingTableId(null)}
+        />
+      )}
+
+      {editingObject && (
+        <EditObjectModal
+          object={editingObject}
+          dispatch={dispatch}
+          onClose={() => setEditingObjectId(null)}
         />
       )}
     </div>
@@ -238,11 +332,6 @@ function EditTableModal({
     onClose()
   }
 
-  function remove() {
-    dispatch({ type: 'deleteTable', id: table.id })
-    onClose()
-  }
-
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -258,7 +347,81 @@ function EditTableModal({
         </div>
         {hasOrder && <p className="hint">{t('tableHasOrder')}</p>}
         <div className="modal-actions">
-          <ConfirmButton label={t('delete')} disabled={hasOrder} onConfirm={remove} />
+          <ConfirmButton
+            label={t('delete')}
+            disabled={hasOrder}
+            onConfirm={() => {
+              dispatch({ type: 'deleteTable', id: table.id })
+              onClose()
+            }}
+          />
+          <div className="spacer" />
+          <button className="btn" onClick={onClose}>
+            {t('cancel')}
+          </button>
+          <button className="btn primary" disabled={!name.trim()} onClick={save}>
+            {t('save')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EditObjectModal({
+  object,
+  dispatch,
+  onClose,
+}: {
+  object: FloorObject
+  dispatch: React.Dispatch<Action>
+  onClose: () => void
+}) {
+  const t = useT()
+  const [name, setName] = useState(object.name)
+  const [color, setColor] = useState(object.color)
+
+  function save() {
+    const trimmed = name.trim()
+    if (trimmed) dispatch({ type: 'updateObject', id: object.id, name: trimmed, color })
+    onClose()
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>{t('editObject')}</h3>
+        <div className="field">
+          <label>{t('objectName')}</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+            onKeyDown={(e) => e.key === 'Enter' && save()}
+          />
+        </div>
+        <div className="field">
+          <label>{t('color')}</label>
+          <div className="color-row">
+            {OBJECT_COLORS.map((c) => (
+              <button
+                key={c}
+                className={'color-swatch' + (c === color ? ' selected' : '')}
+                style={{ background: c }}
+                aria-label={c}
+                onClick={() => setColor(c)}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="modal-actions">
+          <ConfirmButton
+            label={t('delete')}
+            onConfirm={() => {
+              dispatch({ type: 'deleteObject', id: object.id })
+              onClose()
+            }}
+          />
           <div className="spacer" />
           <button className="btn" onClick={onClose}>
             {t('cancel')}

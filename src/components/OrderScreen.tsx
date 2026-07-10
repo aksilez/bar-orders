@@ -20,16 +20,24 @@ interface Props {
   onPaid: (info: PaidInfo) => void
 }
 
+/** Sentinel tab id for the favorites tab in the product picker. */
+const FAV = '__fav__'
+
 export default function OrderScreen({ table, products, categories, dispatch, onClose, onPaid }: Props) {
   const t = useT()
   const cats = categories.filter((c) => products.some((p) => p.category === c))
-  const [cat, setCat] = useState<Category>(cats[0] ?? '')
+  const favorites = sortProducts(products.filter((p) => p.favorite))
+  const [cat, setCat] = useState<Category>(() => (favorites.length > 0 ? FAV : cats[0] ?? ''))
   const [confirmPay, setConfirmPay] = useState(false)
 
-  // Keep a valid category selected if the list changes.
+  // Keep a valid tab selected if the lists change.
   useEffect(() => {
-    if (!cats.includes(cat) && cats.length > 0) setCat(cats[0])
-  }, [cats, cat])
+    const valid = cat === FAV ? favorites.length > 0 : cats.includes(cat)
+    if (!valid) setCat(favorites.length > 0 ? FAV : cats[0] ?? '')
+  }, [cats, cat, favorites.length])
+
+  const shownProducts =
+    cat === FAV ? favorites : sortProducts(products.filter((p) => p.category === cat))
 
   // Two-tap confirmation for "Mark as paid" — resets itself after 3 s.
   useEffect(() => {
@@ -132,6 +140,15 @@ export default function OrderScreen({ table, products, categories, dispatch, onC
 
         <section className="product-picker">
           <div className="cat-tabs">
+            {favorites.length > 0 && (
+              <button
+                className={'cat-tab fav' + (cat === FAV ? ' active' : '')}
+                aria-label={t('favorites')}
+                onClick={() => setCat(FAV)}
+              >
+                ★
+              </button>
+            )}
             {cats.map((c) => (
               <button
                 key={c}
@@ -143,7 +160,7 @@ export default function OrderScreen({ table, products, categories, dispatch, onC
             ))}
           </div>
           <div className="product-grid">
-            {sortProducts(products.filter((p) => p.category === cat)).map((p) => (
+            {shownProducts.map((p) => (
               <button
                 key={p.id}
                 className="product-btn"

@@ -1,5 +1,5 @@
-import type { Area, AppState, Category, PaidOrder, Product, Table } from './types'
-import { DEFAULT_TABLE_H, DEFAULT_TABLE_W, orderTotal, uid } from './types'
+import type { Area, AppState, Category, FloorObject, PaidOrder, Product, Table } from './types'
+import { DEFAULT_TABLE_H, DEFAULT_TABLE_W, GRID, OBJECT_COLORS, orderTotal, uid } from './types'
 
 export const DEFAULT_CATEGORIES: Category[] = ['Beer', 'Soft drinks', 'Spirits', 'Food', 'Other']
 
@@ -10,6 +10,11 @@ export type Action =
   | { type: 'deleteTable'; id: string }
   | { type: 'moveTable'; id: string; x: number; y: number }
   | { type: 'resizeTable'; id: string; w: number; h: number }
+  | { type: 'addObject'; area: Area; baseName: string }
+  | { type: 'updateObject'; id: string; name: string; color: string }
+  | { type: 'moveObject'; id: string; x: number; y: number }
+  | { type: 'resizeObject'; id: string; w: number; h: number }
+  | { type: 'deleteObject'; id: string }
   | { type: 'addItem'; tableId: string; product: Product }
   | { type: 'incItem'; tableId: string; productId: string }
   | { type: 'decItem'; tableId: string; productId: string }
@@ -77,6 +82,50 @@ export function reducer(state: AppState, action: Action): AppState {
           t.id === action.id ? { ...t, w: action.w, h: action.h } : t
         ),
       }
+
+    case 'addObject': {
+      const inArea = state.objects.filter((o) => o.area === action.area).length
+      let n = 1
+      while (state.objects.some((o) => o.name === `${action.baseName} ${n}`)) n++
+      const object: FloorObject = {
+        id: uid(),
+        name: `${action.baseName} ${n}`,
+        area: action.area,
+        x: 6 + (inArea % 4) * 23,
+        y: 60,
+        w: GRID * 4,
+        h: GRID * 2,
+        color: OBJECT_COLORS[0],
+      }
+      return { ...state, objects: [...state.objects, object] }
+    }
+
+    case 'updateObject':
+      return {
+        ...state,
+        objects: state.objects.map((o) =>
+          o.id === action.id ? { ...o, name: action.name, color: action.color } : o
+        ),
+      }
+
+    case 'moveObject':
+      return {
+        ...state,
+        objects: state.objects.map((o) =>
+          o.id === action.id ? { ...o, x: action.x, y: action.y } : o
+        ),
+      }
+
+    case 'resizeObject':
+      return {
+        ...state,
+        objects: state.objects.map((o) =>
+          o.id === action.id ? { ...o, w: action.w, h: action.h } : o
+        ),
+      }
+
+    case 'deleteObject':
+      return { ...state, objects: state.objects.filter((o) => o.id !== action.id) }
 
     case 'addItem':
       return mapTable(state, action.tableId, (t) => {
@@ -244,7 +293,13 @@ export function migrate(saved: Partial<AppState>): AppState {
     w: t.w ?? DEFAULT_TABLE_W,
     h: t.h ?? DEFAULT_TABLE_H,
   }))
-  return { products, categories, tables, history: saved.history ?? [] }
+  return {
+    products,
+    categories,
+    tables,
+    objects: saved.objects ?? [],
+    history: saved.history ?? [],
+  }
 }
 
 /** Starter data for the first launch so the app is usable immediately. */
@@ -289,6 +344,7 @@ export function seedState(): AppState {
       table('Terrace 1', 'outdoor', 6, 8),
       table('Terrace 2', 'outdoor', 32, 8),
     ],
+    objects: [],
     history: [],
   }
 }

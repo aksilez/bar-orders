@@ -119,6 +119,7 @@ export default function App() {
           <FloorPlan
             area={screen as Area}
             tables={state.tables.filter((tb) => tb.area === screen)}
+            objects={state.objects.filter((o) => o.area === screen)}
             editMode={editMode}
             dispatch={dispatch}
             onOpenTable={setOpenTableId}

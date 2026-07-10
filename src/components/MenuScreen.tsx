@@ -90,7 +90,6 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
             <div className="cat-head">
               <button className="cat-head-btn" onClick={() => setEditingCat(cat)}>
                 <h3>{cat}</h3>
-                <span className="cat-count">{inCat.length}</span>
               </button>
               <button
                 className={'cat-collapse' + (isCollapsed ? '' : ' open')}

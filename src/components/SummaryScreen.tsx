@@ -286,27 +286,46 @@ function PinModal({ onSuccess, onClose }: { onSuccess: () => void; onClose: () =
     }
   }, [pin, onSuccess])
 
+  // In-app number pad instead of a text input: no iOS keyboard, no keychain
+  // key icon, no autofill — nothing for the browser to remember.
+  function press(digit: string) {
+    if (wrong || pin.length >= 4) return
+    setPin(pin + digit)
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal pin-modal" onClick={(e) => e.stopPropagation()}>
         <h3>{t('enterPin')}</h3>
-        {/* type="text" + CSS text-security instead of type="password", so the
-            browser/iOS keychain never offers to save or autofill the PIN */}
-        <input
-          className={'pin-input' + (wrong ? ' wrong' : '')}
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          name="one-time-entry"
-          autoFocus
-          maxLength={4}
-          value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-        />
+        <div className={'pin-dots' + (wrong ? ' wrong' : '')}>
+          {[0, 1, 2, 3].map((i) => (
+            <span key={i} className={'pin-dot' + (i < pin.length ? ' filled' : '')} />
+          ))}
+        </div>
         <p className={'hint pin-hint' + (wrong ? ' wrong' : '')}>{wrong ? t('wrongPin') : ' '}</p>
+        <div className="pin-pad">
+          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
+            <button key={d} className="pin-key" onClick={() => press(d)}>
+              {d}
+            </button>
+          ))}
+          <span />
+          <button className="pin-key" onClick={() => press('0')}>
+            0
+          </button>
+          <button
+            className="pin-key backspace"
+            aria-label="backspace"
+            onClick={() => {
+              // backspace during the "wrong" flash clears everything — otherwise
+              // it would cancel the auto-reset timer and lock the pad
+              setPin(wrong ? '' : pin.slice(0, -1))
+              setWrong(false)
+            }}
+          >
+            ⌫
+          </button>
+        </div>
         <div className="modal-actions">
           <div className="spacer" />
           <button className="btn" onClick={onClose}>
