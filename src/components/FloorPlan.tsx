@@ -30,6 +30,7 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
   const planRef = useRef<HTMLDivElement>(null)
   const drag = useRef<DragInfo | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
 
   const editingTable = editingId ? tables.find((t) => t.id === editingId) ?? null : null
 
@@ -50,6 +51,7 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
     const dx = e.clientX - d.startX
     const dy = e.clientY - d.startY
     if (!d.moved && Math.hypot(dx, dy) < TAP_SLOP_PX) return
+    if (!d.moved) setDraggingId(d.id)
     d.moved = true
     const rect = plan.getBoundingClientRect()
     const xPx = clamp((d.origX / 100) * rect.width + dx, 0, rect.width - CARD_W)
@@ -60,6 +62,7 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
   function onPointerUp(t: Table) {
     const d = drag.current
     drag.current = null
+    setDraggingId(null)
     if (editMode && d && !d.moved) setEditingId(t.id)
   }
 
@@ -80,12 +83,20 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
           return (
             <div
               key={t.id}
-              className={'table-card' + (active ? ' active' : '') + (editMode ? ' editing' : '')}
+              className={
+                'table-card' +
+                (active ? ' active' : ' free') +
+                (editMode ? ' editing' : '') +
+                (draggingId === t.id ? ' dragging' : '')
+              }
               style={{ left: t.x + '%', top: t.y + '%' }}
               onPointerDown={(e) => onPointerDown(e, t)}
               onPointerMove={onPointerMove}
               onPointerUp={() => onPointerUp(t)}
-              onPointerCancel={() => (drag.current = null)}
+              onPointerCancel={() => {
+                drag.current = null
+                setDraggingId(null)
+              }}
               onClick={() => !editMode && onOpenTable(t.id)}
             >
               <div className="table-name">{t.name}</div>

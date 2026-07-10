@@ -17,6 +17,8 @@ const SCREENS: { id: Screen; label: string }[] = [
   { id: 'summary', label: 'Summary' },
 ]
 
+type Theme = 'dark' | 'light'
+
 function rootReducer(state: AppState | null, action: Action): AppState | null {
   if (action.type === 'load') return action.state
   if (!state) return state
@@ -28,6 +30,9 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('indoor')
   const [editMode, setEditMode] = useState(false)
   const [openTableId, setOpenTableId] = useState<string | null>(null)
+  const [theme, setTheme] = useState<Theme>(
+    () => (localStorage.getItem('bar-orders-theme') as Theme | null) ?? 'dark'
+  )
 
   useEffect(() => {
     loadState().then((saved) => dispatch({ type: 'load', state: saved ?? seedState() }))
@@ -36,6 +41,11 @@ export default function App() {
   useEffect(() => {
     if (state) saveState(state)
   }, [state])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('bar-orders-theme', theme)
+  }, [theme])
 
   if (!state) return <div className="loading">Loading…</div>
 
@@ -69,6 +79,13 @@ export default function App() {
             {editMode ? '✓ Done' : 'Edit layout'}
           </button>
         )}
+        <button
+          className="btn theme-toggle"
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        >
+          {theme === 'dark' ? '🌙' : '☀️'}
+        </button>
       </header>
 
       {isFloor && (
