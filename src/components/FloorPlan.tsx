@@ -3,6 +3,7 @@ import type { Area, Table } from '../types'
 import { GRID, fmtEur, orderTotal } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
+import ConfirmButton from './ConfirmButton'
 
 interface Props {
   area: Area
@@ -83,17 +84,29 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
     if (!d.moved && Math.hypot(dx, dy) < TAP_SLOP_PX) return
     if (!d.moved) setDraggingId(d.id)
     d.moved = true
+    // follow the finger freely — snapping happens on release
     const rect = plan.getBoundingClientRect()
-    const xPx = clamp(snap((d.origX / 100) * rect.width + dx), 0, rect.width - d.w)
-    const yPx = clamp(snap((d.origY / 100) * rect.height + dy), 0, rect.height - d.h)
+    const xPx = clamp((d.origX / 100) * rect.width + dx, 0, rect.width - d.w)
+    const yPx = clamp((d.origY / 100) * rect.height + dy, 0, rect.height - d.h)
     dispatch({ type: 'moveTable', id: d.id, x: (xPx / rect.width) * 100, y: (yPx / rect.height) * 100 })
   }
 
   function onPointerUp(tb: Table) {
     const d = drag.current
+    const plan = planRef.current
     drag.current = null
     setDraggingId(null)
-    if (editMode && d && !d.moved) setEditingId(tb.id)
+    if (!editMode || !d) return
+    if (!d.moved) {
+      setEditingId(tb.id)
+      return
+    }
+    if (!plan) return
+    // snap into the grid — the transition animates the card into place
+    const rect = plan.getBoundingClientRect()
+    const xPx = clamp(snap((tb.x / 100) * rect.width), 0, rect.width - tb.w)
+    const yPx = clamp(snap((tb.y / 100) * rect.height), 0, rect.height - tb.h)
+    dispatch({ type: 'moveTable', id: tb.id, x: (xPx / rect.width) * 100, y: (yPx / rect.height) * 100 })
   }
 
   function onResizeDown(e: React.PointerEvent<HTMLDivElement>, tb: Table) {
@@ -117,14 +130,20 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
   function onResizeMove(e: React.PointerEvent<HTMLDivElement>) {
     const r = resize.current
     if (!r) return
-    const w = clamp(snap(r.origW + e.clientX - r.startX), MIN_W, Math.max(MIN_W, snap(r.maxW)))
-    const h = clamp(snap(r.origH + e.clientY - r.startY), MIN_H, Math.max(MIN_H, snap(r.maxH)))
+    // resize freely — snapping happens on release
+    const w = clamp(r.origW + e.clientX - r.startX, MIN_W, Math.max(MIN_W, r.maxW))
+    const h = clamp(r.origH + e.clientY - r.startY, MIN_H, Math.max(MIN_H, r.maxH))
     dispatch({ type: 'resizeTable', id: r.id, w, h })
   }
 
-  function onResizeUp() {
+  function onResizeUp(tb: Table) {
+    const r = resize.current
     resize.current = null
     setResizingId(null)
+    if (!r) return
+    const w = clamp(snap(tb.w), MIN_W, Math.max(MIN_W, snap(r.maxW)))
+    const h = clamp(snap(tb.h), MIN_H, Math.max(MIN_H, snap(r.maxH)))
+    dispatch({ type: 'resizeTable', id: tb.id, w, h })
   }
 
   return (
@@ -175,8 +194,8 @@ export default function FloorPlan({ area, tables, editMode, dispatch, onOpenTabl
                   className="resize-handle"
                   onPointerDown={(e) => onResizeDown(e, tb)}
                   onPointerMove={onResizeMove}
-                  onPointerUp={onResizeUp}
-                  onPointerCancel={onResizeUp}
+                  onPointerUp={() => onResizeUp(tb)}
+                  onPointerCancel={() => onResizeUp(tb)}
                 />
               )}
             </div>
@@ -220,10 +239,8 @@ function EditTableModal({
   }
 
   function remove() {
-    if (window.confirm(t('confirmDeleteTable', table.name))) {
-      dispatch({ type: 'deleteTable', id: table.id })
-      onClose()
-    }
+    dispatch({ type: 'deleteTable', id: table.id })
+    onClose()
   }
 
   return (
@@ -241,9 +258,7 @@ function EditTableModal({
         </div>
         {hasOrder && <p className="hint">{t('tableHasOrder')}</p>}
         <div className="modal-actions">
-          <button className="btn danger" disabled={hasOrder} onClick={remove}>
-            {t('delete')}
-          </button>
+          <ConfirmButton label={t('delete')} disabled={hasOrder} onConfirm={remove} />
           <div className="spacer" />
           <button className="btn" onClick={onClose}>
             {t('cancel')}

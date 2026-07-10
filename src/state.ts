@@ -14,11 +14,14 @@ export type Action =
   | { type: 'incItem'; tableId: string; productId: string }
   | { type: 'decItem'; tableId: string; productId: string }
   | { type: 'removeItem'; tableId: string; productId: string }
-  | { type: 'markPaid'; tableId: string }
+  | { type: 'markPaid'; tableId: string; paidId: string }
+  | { type: 'undoPaid'; paidId: string }
   | { type: 'addProduct'; name: string; price: number; category: Category }
   | { type: 'updateProduct'; product: Product }
   | { type: 'deleteProduct'; id: string }
+  | { type: 'toggleFavorite'; id: string }
   | { type: 'addCategory'; name: string }
+  | { type: 'renameCategory'; oldName: string; newName: string }
   | { type: 'deleteCategory'; name: string }
   | { type: 'deleteHistoryRange'; start: number; end: number }
   | { type: 'deleteHistoryAll' }
@@ -120,7 +123,7 @@ export function reducer(state: AppState, action: Action): AppState {
       const table = state.tables.find((t) => t.id === action.tableId)
       if (!table || table.order.length === 0) return state
       const paid: PaidOrder = {
-        id: uid(),
+        id: action.paidId,
         tableId: table.id,
         tableName: table.name,
         items: table.order,
@@ -133,6 +136,25 @@ export function reducer(state: AppState, action: Action): AppState {
         tables: state.tables.map((t) =>
           t.id === table.id ? { ...t, order: [] } : t
         ),
+      }
+    }
+
+    case 'undoPaid': {
+      const order = state.history.find((o) => o.id === action.paidId)
+      if (!order) return state
+      const table = state.tables.find((t) => t.id === order.tableId)
+      if (!table) return state
+      // put the items back, merging with anything ordered in the meantime
+      const merged = [...table.order]
+      for (const item of order.items) {
+        const idx = merged.findIndex((m) => m.productId === item.productId)
+        if (idx >= 0) merged[idx] = { ...merged[idx], qty: merged[idx].qty + item.qty }
+        else merged.push(item)
+      }
+      return {
+        ...state,
+        history: state.history.filter((o) => o.id !== action.paidId),
+        tables: state.tables.map((t) => (t.id === table.id ? { ...t, order: merged } : t)),
       }
     }
 
@@ -156,16 +178,39 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'deleteProduct':
       return { ...state, products: state.products.filter((p) => p.id !== action.id) }
 
+    case 'toggleFavorite':
+      return {
+        ...state,
+        products: state.products.map((p) =>
+          p.id === action.id ? { ...p, favorite: !p.favorite } : p
+        ),
+      }
+
     case 'addCategory': {
       const name = action.name.trim()
       if (!name || state.categories.includes(name)) return state
       return { ...state, categories: [...state.categories, name] }
     }
 
-    case 'deleteCategory': {
-      if (state.products.some((p) => p.category === action.name)) return state
-      return { ...state, categories: state.categories.filter((c) => c !== action.name) }
+    case 'renameCategory': {
+      const newName = action.newName.trim()
+      if (!newName || newName === action.oldName || state.categories.includes(newName)) return state
+      return {
+        ...state,
+        categories: state.categories.map((c) => (c === action.oldName ? newName : c)),
+        products: state.products.map((p) =>
+          p.category === action.oldName ? { ...p, category: newName } : p
+        ),
+      }
     }
+
+    case 'deleteCategory':
+      // deletes the category together with all products in it
+      return {
+        ...state,
+        categories: state.categories.filter((c) => c !== action.name),
+        products: state.products.filter((p) => p.category !== action.name),
+      }
 
     case 'deleteHistoryRange':
       return {

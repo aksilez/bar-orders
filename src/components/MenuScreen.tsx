@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { Category, Product } from '../types'
-import { fmtEur } from '../types'
+import { fmtEur, sortProducts } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
+import ConfirmButton from './ConfirmButton'
 
 interface Props {
   products: Product[]
@@ -21,6 +22,7 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
   const t = useT()
   const [form, setForm] = useState<FormState | null>(null)
   const [catName, setCatName] = useState<string | null>(null)
+  const [editingCat, setEditingCat] = useState<Category | null>(null)
 
   const parsedPrice = form ? parseFloat(form.price.replace(',', '.')) : NaN
   const formValid =
@@ -30,9 +32,16 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
     if (!form || !formValid) return
     const name = form.name.trim()
     if (form.id) {
+      const original = products.find((p) => p.id === form.id)
       dispatch({
         type: 'updateProduct',
-        product: { id: form.id, name, price: parsedPrice, category: form.category },
+        product: {
+          id: form.id,
+          name,
+          price: parsedPrice,
+          category: form.category,
+          favorite: original?.favorite,
+        },
       })
     } else {
       dispatch({ type: 'addProduct', name, price: parsedPrice, category: form.category })
@@ -40,22 +49,10 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
     setForm(null)
   }
 
-  function remove(p: Product) {
-    if (window.confirm(t('confirmDeleteProduct', p.name))) {
-      dispatch({ type: 'deleteProduct', id: p.id })
-    }
-  }
-
   function saveCategory() {
     const name = (catName ?? '').trim()
     if (name) dispatch({ type: 'addCategory', name })
     setCatName(null)
-  }
-
-  function removeCategory(name: string) {
-    if (window.confirm(t('confirmDeleteCategory', name))) {
-      dispatch({ type: 'deleteCategory', name })
-    }
   }
 
   return (
@@ -76,20 +73,23 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
       </div>
 
       {categories.map((cat) => {
-        const inCat = products.filter((p) => p.category === cat)
+        const inCat = sortProducts(products.filter((p) => p.category === cat))
         return (
           <section key={cat} className="cat-section">
-            <div className="cat-head">
+            <button className="cat-head-btn" onClick={() => setEditingCat(cat)}>
               <h3>{cat}</h3>
-              {inCat.length === 0 && (
-                <button className="btn danger small" onClick={() => removeCategory(cat)}>
-                  {t('delete')}
-                </button>
-              )}
-            </div>
+              <span className="cat-chevron">›</span>
+            </button>
             {inCat.length === 0 && <p className="hint">{t('emptyCategory')}</p>}
             {inCat.map((p) => (
               <div className="product-row" key={p.id}>
+                <button
+                  className={'star-btn' + (p.favorite ? ' on' : '')}
+                  aria-label="favorite"
+                  onClick={() => dispatch({ type: 'toggleFavorite', id: p.id })}
+                >
+                  {p.favorite ? '★' : '☆'}
+                </button>
                 <span className="name">{p.name}</span>
                 <span className="price">{fmtEur(p.price)}</span>
                 <button
@@ -100,9 +100,10 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
                 >
                   {t('edit')}
                 </button>
-                <button className="btn danger" onClick={() => remove(p)}>
-                  {t('delete')}
-                </button>
+                <ConfirmButton
+                  label={t('delete')}
+                  onConfirm={() => dispatch({ type: 'deleteProduct', id: p.id })}
+                />
               </div>
             ))}
           </section>
@@ -181,6 +182,72 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
           </div>
         </div>
       )}
+
+      {editingCat !== null && (
+        <EditCategoryModal
+          category={editingCat}
+          productCount={products.filter((p) => p.category === editingCat).length}
+          dispatch={dispatch}
+          onClose={() => setEditingCat(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function EditCategoryModal({
+  category,
+  productCount,
+  dispatch,
+  onClose,
+}: {
+  category: Category
+  productCount: number
+  dispatch: React.Dispatch<Action>
+  onClose: () => void
+}) {
+  const t = useT()
+  const [name, setName] = useState(category)
+
+  function save() {
+    const trimmed = name.trim()
+    if (trimmed && trimmed !== category) {
+      dispatch({ type: 'renameCategory', oldName: category, newName: trimmed })
+    }
+    onClose()
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>{t('editCategory')}</h3>
+        <div className="field">
+          <label>{t('categoryName')}</label>
+          <input
+            value={name}
+            autoFocus
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && save()}
+          />
+        </div>
+        {productCount > 0 && <p className="hint">{t('deletesProductsToo', String(productCount))}</p>}
+        <div className="modal-actions">
+          <ConfirmButton
+            label={t('delete')}
+            onConfirm={() => {
+              dispatch({ type: 'deleteCategory', name: category })
+              onClose()
+            }}
+          />
+          <div className="spacer" />
+          <button className="btn" onClick={onClose}>
+            {t('cancel')}
+          </button>
+          <button className="btn primary" disabled={!name.trim()} onClick={save}>
+            {t('save')}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

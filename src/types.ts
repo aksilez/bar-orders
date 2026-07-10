@@ -13,6 +13,14 @@ export interface Product {
   name: string
   price: number
   category: Category
+  favorite?: boolean
+}
+
+/** Favorites first, then alphabetical — the ordering used everywhere products are listed. */
+export function sortProducts(products: Product[]): Product[] {
+  return [...products].sort(
+    (a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0) || a.name.localeCompare(b.name)
+  )
 }
 
 /** Snapshot of a product at the moment it was ordered — menu edits never change open tabs. */

@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useState } from 'react'
 import type { Area, AppState } from './types'
+import { fmtEur } from './types'
 import type { Action } from './state'
 import { migrate, reducer, seedState } from './state'
 import { loadState, saveState } from './storage'
@@ -7,6 +8,7 @@ import type { Lang } from './i18n'
 import { I18nContext, tFor } from './i18n'
 import { GearIcon, MoonIcon, SunIcon } from './icons'
 import FloorPlan from './components/FloorPlan'
+import type { PaidInfo } from './components/OrderScreen'
 import OrderScreen from './components/OrderScreen'
 import MenuScreen from './components/MenuScreen'
 import SummaryScreen from './components/SummaryScreen'
@@ -28,6 +30,7 @@ export default function App() {
   const [editMode, setEditMode] = useState(false)
   const [openTableId, setOpenTableId] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [toast, setToast] = useState<PaidInfo | null>(null)
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem('bar-orders-theme') as Theme | null) ?? 'dark'
   )
@@ -53,6 +56,13 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('bar-orders-lang', lang)
   }, [lang])
+
+  // The undo toast disappears after 6 s.
+  useEffect(() => {
+    if (!toast) return
+    const id = window.setTimeout(() => setToast(null), 6000)
+    return () => clearTimeout(id)
+  }, [toast])
 
   const t = tFor(lang)
 
@@ -132,7 +142,25 @@ export default function App() {
             categories={state.categories}
             dispatch={dispatch}
             onClose={() => setOpenTableId(null)}
+            onPaid={setToast}
           />
+        )}
+
+        {toast && (
+          <div className="toast">
+            <span className="toast-text">
+              ✓ {t('paidToast', toast.tableName)} · {fmtEur(toast.total)}
+            </span>
+            <button
+              className="btn small"
+              onClick={() => {
+                dispatch({ type: 'undoPaid', paidId: toast.paidId })
+                setToast(null)
+              }}
+            >
+              {t('undo')}
+            </button>
+          </div>
         )}
 
         {settingsOpen && (

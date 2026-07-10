@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 import type { Category, Product, Table } from '../types'
-import { fmtEur, orderTotal } from '../types'
+import { fmtEur, orderTotal, sortProducts, uid } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
+import ConfirmButton from './ConfirmButton'
+
+export interface PaidInfo {
+  paidId: string
+  tableName: string
+  total: number
+}
 
 interface Props {
   table: Table
@@ -10,9 +17,10 @@ interface Props {
   categories: Category[]
   dispatch: React.Dispatch<Action>
   onClose: () => void
+  onPaid: (info: PaidInfo) => void
 }
 
-export default function OrderScreen({ table, products, categories, dispatch, onClose }: Props) {
+export default function OrderScreen({ table, products, categories, dispatch, onClose, onPaid }: Props) {
   const t = useT()
   const cats = categories.filter((c) => products.some((p) => p.category === c))
   const [cat, setCat] = useState<Category>(cats[0] ?? '')
@@ -37,14 +45,10 @@ export default function OrderScreen({ table, products, categories, dispatch, onC
       setConfirmPay(true)
       return
     }
-    dispatch({ type: 'markPaid', tableId: table.id })
+    const paidId = uid()
+    dispatch({ type: 'markPaid', tableId: table.id, paidId })
+    onPaid({ paidId, tableName: table.name, total })
     onClose()
-  }
-
-  function removeWithConfirm(productId: string, name: string) {
-    if (window.confirm(t('confirmRemoveItem', name))) {
-      dispatch({ type: 'removeItem', tableId: table.id, productId })
-    }
   }
 
   return (
@@ -70,15 +74,25 @@ export default function OrderScreen({ table, products, categories, dispatch, onC
                       {fmtEur(item.price)} {t('each')}
                     </span>
                   </div>
-                  <button
-                    className="qty-btn"
-                    onClick={() => {
-                      if (item.qty === 1) removeWithConfirm(item.productId, item.name)
-                      else dispatch({ type: 'decItem', tableId: table.id, productId: item.productId })
-                    }}
-                  >
-                    −
-                  </button>
+                  {item.qty === 1 ? (
+                    <ConfirmButton
+                      className="qty-btn"
+                      label="−"
+                      armedLabel="✓"
+                      onConfirm={() =>
+                        dispatch({ type: 'removeItem', tableId: table.id, productId: item.productId })
+                      }
+                    />
+                  ) : (
+                    <button
+                      className="qty-btn"
+                      onClick={() =>
+                        dispatch({ type: 'decItem', tableId: table.id, productId: item.productId })
+                      }
+                    >
+                      −
+                    </button>
+                  )}
                   <span className="qty">{item.qty}</span>
                   <button
                     className="qty-btn"
@@ -89,13 +103,14 @@ export default function OrderScreen({ table, products, categories, dispatch, onC
                     +
                   </button>
                   <span className="line-total">{fmtEur(item.price * item.qty)}</span>
-                  <button
+                  <ConfirmButton
                     className="remove-btn"
-                    aria-label={`Remove ${item.name}`}
-                    onClick={() => removeWithConfirm(item.productId, item.name)}
-                  >
-                    ✕
-                  </button>
+                    label="✕"
+                    armedLabel="✓"
+                    onConfirm={() =>
+                      dispatch({ type: 'removeItem', tableId: table.id, productId: item.productId })
+                    }
+                  />
                 </div>
               ))
             )}
@@ -128,18 +143,17 @@ export default function OrderScreen({ table, products, categories, dispatch, onC
             ))}
           </div>
           <div className="product-grid">
-            {products
-              .filter((p) => p.category === cat)
-              .map((p) => (
-                <button
-                  key={p.id}
-                  className="product-btn"
-                  onClick={() => dispatch({ type: 'addItem', tableId: table.id, product: p })}
-                >
-                  <span>{p.name}</span>
-                  <span className="price">{fmtEur(p.price)}</span>
-                </button>
-              ))}
+            {sortProducts(products.filter((p) => p.category === cat)).map((p) => (
+              <button
+                key={p.id}
+                className="product-btn"
+                onClick={() => dispatch({ type: 'addItem', tableId: table.id, product: p })}
+              >
+                {p.favorite && <span className="fav-star">★</span>}
+                <span>{p.name}</span>
+                <span className="price">{fmtEur(p.price)}</span>
+              </button>
+            ))}
             {products.length === 0 && <div className="empty">{t('noProducts')}</div>}
           </div>
         </section>
