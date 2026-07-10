@@ -11,6 +11,7 @@
   --red: #e5484d;
   --tint-free: rgba(52, 199, 123, 0.13);
   --tint-active: rgba(240, 165, 49, 0.16);
+  --green-text: #06220f;
 }
 
 :root[data-theme='light'] {
@@ -26,6 +27,7 @@
   --red: #d13438;
   --tint-free: rgba(31, 157, 92, 0.1);
   --tint-active: rgba(201, 130, 10, 0.14);
+  --green-text: #ffffff;
 }
 
 * {
@@ -129,10 +131,16 @@ button {
   transform: scale(0.96);
 }
 
-.theme-toggle {
+.btn.icon {
   min-width: 52px;
-  padding: 0;
-  font-size: 22px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn.icon svg {
+  display: block;
 }
 
 /* ---------- Buttons ---------- */
@@ -159,6 +167,19 @@ button {
   background: transparent;
   border-color: var(--red);
   color: var(--red);
+}
+
+.btn.ok {
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--green-text);
+}
+
+.btn.small {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 14px;
+  border-radius: 10px;
 }
 
 .btn:disabled {
@@ -214,8 +235,6 @@ button {
 
 .table-card {
   position: absolute;
-  width: 128px;
-  height: 92px;
   background: var(--panel);
   border: 2px solid var(--border);
   border-radius: 16px;
@@ -255,10 +274,28 @@ button {
   z-index: 5;
 }
 
+.table-card.resizing {
+  transition: none;
+  z-index: 5;
+}
+
+.resize-handle {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 36px;
+  height: 36px;
+  border-right: 5px solid var(--accent);
+  border-bottom: 5px solid var(--accent);
+  border-bottom-right-radius: 16px;
+  touch-action: none;
+  cursor: nwse-resize;
+}
+
 .table-name {
   font-weight: 700;
   font-size: 17px;
-  max-width: 116px;
+  max-width: calc(100% - 12px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -427,7 +464,7 @@ button {
 .btn.pay {
   background: var(--green);
   border-color: var(--green);
-  color: #06220f;
+  color: var(--green-text);
   min-height: 62px;
   font-size: 19px;
   font-weight: 700;
@@ -541,6 +578,21 @@ button {
   font-size: 14px;
   letter-spacing: 0.06em;
   margin: 18px 0 8px;
+}
+
+.cat-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cat-head h3 {
+  margin: 18px 0 8px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .product-row {
@@ -721,6 +773,23 @@ button {
   user-select: text;
 }
 
+/* iOS renders selects tiny by default — force the same size as text inputs. */
+.field select {
+  height: 52px;
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%238b94a5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.field input[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+}
+
 .modal-actions {
   display: flex;
   gap: 10px;
@@ -729,4 +798,18 @@ button {
 
 .modal-actions .btn:last-child {
   min-width: 110px;
+}
+
+/* Stacked full-width option buttons inside modals (e.g. delete-history choices). */
+.modal > .btn {
+  width: 100%;
+}
+
+.lang-row {
+  display: flex;
+  gap: 10px;
+}
+
+.lang-row .btn {
+  flex: 1;
 }

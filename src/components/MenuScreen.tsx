@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import type { Category, Product } from '../types'
-import { CATEGORIES, fmtEur } from '../types'
+import { fmtEur } from '../types'
 import type { Action } from '../state'
+import { useT } from '../i18n'
 
 interface Props {
   products: Product[]
+  categories: Category[]
   dispatch: React.Dispatch<Action>
 }
 
@@ -15,11 +17,14 @@ interface FormState {
   category: Category
 }
 
-export default function MenuScreen({ products, dispatch }: Props) {
+export default function MenuScreen({ products, categories, dispatch }: Props) {
+  const t = useT()
   const [form, setForm] = useState<FormState | null>(null)
+  const [catName, setCatName] = useState<string | null>(null)
 
   const parsedPrice = form ? parseFloat(form.price.replace(',', '.')) : NaN
-  const formValid = form !== null && form.name.trim() !== '' && isFinite(parsedPrice) && parsedPrice >= 0
+  const formValid =
+    form !== null && form.name.trim() !== '' && isFinite(parsedPrice) && parsedPrice >= 0
 
   function save() {
     if (!form || !formValid) return
@@ -36,31 +41,53 @@ export default function MenuScreen({ products, dispatch }: Props) {
   }
 
   function remove(p: Product) {
-    if (window.confirm(`Delete “${p.name}” from the menu?`)) {
+    if (window.confirm(t('confirmDeleteProduct', p.name))) {
       dispatch({ type: 'deleteProduct', id: p.id })
+    }
+  }
+
+  function saveCategory() {
+    const name = (catName ?? '').trim()
+    if (name) dispatch({ type: 'addCategory', name })
+    setCatName(null)
+  }
+
+  function removeCategory(name: string) {
+    if (window.confirm(t('confirmDeleteCategory', name))) {
+      dispatch({ type: 'deleteCategory', name })
     }
   }
 
   return (
     <div className="screen">
       <div className="screen-header">
-        <h2>Menu</h2>
-        <button
-          className="btn primary"
-          onClick={() => setForm({ name: '', price: '', category: 'Beer' })}
-        >
-          + Add product
-        </button>
+        <h2>{t('menu')}</h2>
+        <div className="header-actions">
+          <button className="btn" onClick={() => setCatName('')}>
+            {t('addCategory')}
+          </button>
+          <button
+            className="btn primary"
+            onClick={() => setForm({ name: '', price: '', category: categories[0] ?? '' })}
+          >
+            {t('addProduct')}
+          </button>
+        </div>
       </div>
 
-      {products.length === 0 && <div className="empty">No products yet.</div>}
-
-      {CATEGORIES.map((cat) => {
+      {categories.map((cat) => {
         const inCat = products.filter((p) => p.category === cat)
-        if (inCat.length === 0) return null
         return (
           <section key={cat} className="cat-section">
-            <h3>{cat}</h3>
+            <div className="cat-head">
+              <h3>{cat}</h3>
+              {inCat.length === 0 && (
+                <button className="btn danger small" onClick={() => removeCategory(cat)}>
+                  {t('delete')}
+                </button>
+              )}
+            </div>
+            {inCat.length === 0 && <p className="hint">{t('emptyCategory')}</p>}
             {inCat.map((p) => (
               <div className="product-row" key={p.id}>
                 <span className="name">{p.name}</span>
@@ -71,10 +98,10 @@ export default function MenuScreen({ products, dispatch }: Props) {
                     setForm({ id: p.id, name: p.name, price: p.price.toFixed(2), category: p.category })
                   }
                 >
-                  Edit
+                  {t('edit')}
                 </button>
                 <button className="btn danger" onClick={() => remove(p)}>
-                  Delete
+                  {t('delete')}
                 </button>
               </div>
             ))}
@@ -85,9 +112,9 @@ export default function MenuScreen({ products, dispatch }: Props) {
       {form && (
         <div className="modal-backdrop" onClick={() => setForm(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{form.id ? 'Edit product' : 'New product'}</h3>
+            <h3>{form.id ? t('editProduct') : t('newProduct')}</h3>
             <div className="field">
-              <label>Name</label>
+              <label>{t('name')}</label>
               <input
                 value={form.name}
                 autoFocus
@@ -95,7 +122,7 @@ export default function MenuScreen({ products, dispatch }: Props) {
               />
             </div>
             <div className="field">
-              <label>Price (€)</label>
+              <label>{t('priceEur')}</label>
               <input
                 value={form.price}
                 inputMode="decimal"
@@ -104,12 +131,12 @@ export default function MenuScreen({ products, dispatch }: Props) {
               />
             </div>
             <div className="field">
-              <label>Category</label>
+              <label>{t('category')}</label>
               <select
                 value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value as Category })}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
               >
-                {CATEGORIES.map((c) => (
+                {categories.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
@@ -117,11 +144,38 @@ export default function MenuScreen({ products, dispatch }: Props) {
               </select>
             </div>
             <div className="modal-actions">
+              <div className="spacer" />
               <button className="btn" onClick={() => setForm(null)}>
-                Cancel
+                {t('cancel')}
               </button>
               <button className="btn primary" disabled={!formValid} onClick={save}>
-                Save
+                {t('save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {catName !== null && (
+        <div className="modal-backdrop" onClick={() => setCatName(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{t('newCategory')}</h3>
+            <div className="field">
+              <label>{t('categoryName')}</label>
+              <input
+                value={catName}
+                autoFocus
+                onChange={(e) => setCatName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && saveCategory()}
+              />
+            </div>
+            <div className="modal-actions">
+              <div className="spacer" />
+              <button className="btn" onClick={() => setCatName(null)}>
+                {t('cancel')}
+              </button>
+              <button className="btn primary" disabled={!catName.trim()} onClick={saveCategory}>
+                {t('add')}
               </button>
             </div>
           </div>

@@ -1,23 +1,20 @@
 import { useEffect, useReducer, useState } from 'react'
 import type { Area, AppState } from './types'
 import type { Action } from './state'
-import { reducer, seedState } from './state'
+import { migrate, reducer, seedState } from './state'
 import { loadState, saveState } from './storage'
+import type { Lang } from './i18n'
+import { I18nContext, tFor } from './i18n'
+import { GearIcon, MoonIcon, SunIcon } from './icons'
 import FloorPlan from './components/FloorPlan'
 import OrderScreen from './components/OrderScreen'
 import MenuScreen from './components/MenuScreen'
 import SummaryScreen from './components/SummaryScreen'
 
 type Screen = 'indoor' | 'outdoor' | 'menu' | 'summary'
-
-const SCREENS: { id: Screen; label: string }[] = [
-  { id: 'indoor', label: 'Indoor' },
-  { id: 'outdoor', label: 'Outdoor' },
-  { id: 'menu', label: 'Menu' },
-  { id: 'summary', label: 'Summary' },
-]
-
 type Theme = 'dark' | 'light'
+
+const SCREEN_IDS: Screen[] = ['indoor', 'outdoor', 'menu', 'summary']
 
 function rootReducer(state: AppState | null, action: Action): AppState | null {
   if (action.type === 'load') return action.state
@@ -30,12 +27,18 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('indoor')
   const [editMode, setEditMode] = useState(false)
   const [openTableId, setOpenTableId] = useState<string | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem('bar-orders-theme') as Theme | null) ?? 'dark'
   )
+  const [lang, setLang] = useState<Lang>(
+    () => (localStorage.getItem('bar-orders-lang') as Lang | null) ?? 'en'
+  )
 
   useEffect(() => {
-    loadState().then((saved) => dispatch({ type: 'load', state: saved ?? seedState() }))
+    loadState().then((saved) =>
+      dispatch({ type: 'load', state: saved ? migrate(saved) : seedState() })
+    )
   }, [])
 
   useEffect(() => {
@@ -47,67 +50,122 @@ export default function App() {
     localStorage.setItem('bar-orders-theme', theme)
   }, [theme])
 
-  if (!state) return <div className="loading">Loading…</div>
+  useEffect(() => {
+    localStorage.setItem('bar-orders-lang', lang)
+  }, [lang])
+
+  const t = tFor(lang)
+
+  if (!state) return <div className="loading">{t('loading')}</div>
 
   const isFloor = screen === 'indoor' || screen === 'outdoor'
   const openTable = openTableId
-    ? state.tables.find((t) => t.id === openTableId) ?? null
+    ? state.tables.find((tb) => tb.id === openTableId) ?? null
     : null
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <nav className="tabs">
-          {SCREENS.map((s) => (
+    <I18nContext.Provider value={lang}>
+      <div className="app">
+        <header className="topbar">
+          <nav className="tabs">
+            {SCREEN_IDS.map((id) => (
+              <button
+                key={id}
+                className={'tab' + (screen === id ? ' active' : '')}
+                onClick={() => {
+                  setScreen(id)
+                  if (id === 'menu' || id === 'summary') setEditMode(false)
+                }}
+              >
+                {t(id)}
+              </button>
+            ))}
+          </nav>
+          {isFloor && (
             <button
-              key={s.id}
-              className={'tab' + (screen === s.id ? ' active' : '')}
-              onClick={() => {
-                setScreen(s.id)
-                if (s.id === 'menu' || s.id === 'summary') setEditMode(false)
-              }}
+              className={'btn edit-toggle' + (editMode ? ' active' : '')}
+              onClick={() => setEditMode(!editMode)}
             >
-              {s.label}
+              {editMode ? t('done') : t('editLayout')}
             </button>
-          ))}
-        </nav>
-        {isFloor && (
+          )}
           <button
-            className={'btn edit-toggle' + (editMode ? ' active' : '')}
-            onClick={() => setEditMode(!editMode)}
+            className="btn icon"
+            aria-label={t('settings')}
+            onClick={() => setSettingsOpen(true)}
           >
-            {editMode ? '✓ Done' : 'Edit layout'}
+            <GearIcon />
           </button>
+          <button
+            className="btn icon"
+            aria-label={theme === 'dark' ? 'light mode' : 'dark mode'}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
+          </button>
+        </header>
+
+        {isFloor && (
+          <FloorPlan
+            area={screen as Area}
+            tables={state.tables.filter((tb) => tb.area === screen)}
+            editMode={editMode}
+            dispatch={dispatch}
+            onOpenTable={setOpenTableId}
+          />
         )}
-        <button
-          className="btn theme-toggle"
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        >
-          {theme === 'dark' ? '🌙' : '☀️'}
-        </button>
-      </header>
+        {screen === 'menu' && (
+          <MenuScreen
+            products={state.products}
+            categories={state.categories}
+            dispatch={dispatch}
+          />
+        )}
+        {screen === 'summary' && (
+          <SummaryScreen history={state.history} dispatch={dispatch} />
+        )}
 
-      {isFloor && (
-        <FloorPlan
-          area={screen as Area}
-          tables={state.tables.filter((t) => t.area === screen)}
-          editMode={editMode}
-          dispatch={dispatch}
-          onOpenTable={setOpenTableId}
-        />
-      )}
-      {screen === 'menu' && <MenuScreen products={state.products} dispatch={dispatch} />}
-      {screen === 'summary' && <SummaryScreen history={state.history} />}
+        {openTable && (
+          <OrderScreen
+            table={openTable}
+            products={state.products}
+            categories={state.categories}
+            dispatch={dispatch}
+            onClose={() => setOpenTableId(null)}
+          />
+        )}
 
-      {openTable && (
-        <OrderScreen
-          table={openTable}
-          products={state.products}
-          dispatch={dispatch}
-          onClose={() => setOpenTableId(null)}
-        />
-      )}
-    </div>
+        {settingsOpen && (
+          <div className="modal-backdrop" onClick={() => setSettingsOpen(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <h3>{t('settings')}</h3>
+              <div className="field">
+                <label>{t('language')}</label>
+                <div className="lang-row">
+                  <button
+                    className={'btn' + (lang === 'en' ? ' primary' : '')}
+                    onClick={() => setLang('en')}
+                  >
+                    English
+                  </button>
+                  <button
+                    className={'btn' + (lang === 'sk' ? ' primary' : '')}
+                    onClick={() => setLang('sk')}
+                  >
+                    Slovenčina
+                  </button>
+                </div>
+              </div>
+              <div className="modal-actions">
+                <div className="spacer" />
+                <button className="btn" onClick={() => setSettingsOpen(false)}>
+                  {t('close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </I18nContext.Provider>
   )
 }

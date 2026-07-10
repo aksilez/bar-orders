@@ -1,7 +1,12 @@
 export type Area = 'indoor' | 'outdoor'
 
-export const CATEGORIES = ['Beer', 'Soft drinks', 'Spirits', 'Food', 'Other'] as const
-export type Category = (typeof CATEGORIES)[number]
+/** Categories are user-editable, so they are plain strings stored in AppState. */
+export type Category = string
+
+/** Grid cell size (px) on the floor plan — table positions and sizes snap to it. */
+export const GRID = 34
+export const DEFAULT_TABLE_W = GRID * 4
+export const DEFAULT_TABLE_H = GRID * 3
 
 export interface Product {
   id: string
@@ -25,6 +30,9 @@ export interface Table {
   /** Position as percentage of the floor-plan area (0–100), so layout survives viewport changes. */
   x: number
   y: number
+  /** Size in px, snapped to GRID multiples. */
+  w: number
+  h: number
   order: OrderItem[]
 }
 
@@ -40,6 +48,7 @@ export interface PaidOrder {
 export interface AppState {
   tables: Table[]
   products: Product[]
+  categories: Category[]
   history: PaidOrder[]
 }
 

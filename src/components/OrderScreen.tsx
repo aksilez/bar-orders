@@ -1,19 +1,27 @@
 import { useEffect, useState } from 'react'
 import type { Category, Product, Table } from '../types'
-import { CATEGORIES, fmtEur, orderTotal } from '../types'
+import { fmtEur, orderTotal } from '../types'
 import type { Action } from '../state'
+import { useT } from '../i18n'
 
 interface Props {
   table: Table
   products: Product[]
+  categories: Category[]
   dispatch: React.Dispatch<Action>
   onClose: () => void
 }
 
-export default function OrderScreen({ table, products, dispatch, onClose }: Props) {
-  const cats = CATEGORIES.filter((c) => products.some((p) => p.category === c))
-  const [cat, setCat] = useState<Category>(cats[0] ?? CATEGORIES[0])
+export default function OrderScreen({ table, products, categories, dispatch, onClose }: Props) {
+  const t = useT()
+  const cats = categories.filter((c) => products.some((p) => p.category === c))
+  const [cat, setCat] = useState<Category>(cats[0] ?? '')
   const [confirmPay, setConfirmPay] = useState(false)
+
+  // Keep a valid category selected if the list changes.
+  useEffect(() => {
+    if (!cats.includes(cat) && cats.length > 0) setCat(cats[0])
+  }, [cats, cat])
 
   // Two-tap confirmation for "Mark as paid" — resets itself after 3 s.
   useEffect(() => {
@@ -33,12 +41,18 @@ export default function OrderScreen({ table, products, dispatch, onClose }: Prop
     onClose()
   }
 
+  function removeWithConfirm(productId: string, name: string) {
+    if (window.confirm(t('confirmRemoveItem', name))) {
+      dispatch({ type: 'removeItem', tableId: table.id, productId })
+    }
+  }
+
   return (
     <div className="order-screen">
       <header className="order-header">
         <h2>{table.name}</h2>
-        <button className="btn" onClick={onClose}>
-          ✕ Close
+        <button className="btn ok" onClick={onClose}>
+          ✓ {t('confirm')}
         </button>
       </header>
 
@@ -46,19 +60,22 @@ export default function OrderScreen({ table, products, dispatch, onClose }: Prop
         <section className="order-left">
           <div className="order-items">
             {table.order.length === 0 ? (
-              <div className="empty">No items yet — tap a product on the right to add it.</div>
+              <div className="empty">{t('noItems')}</div>
             ) : (
               table.order.map((item) => (
                 <div className="order-item" key={item.productId}>
                   <div className="item-info">
                     <span className="item-name">{item.name}</span>
-                    <span className="item-unit">{fmtEur(item.price)} each</span>
+                    <span className="item-unit">
+                      {fmtEur(item.price)} {t('each')}
+                    </span>
                   </div>
                   <button
                     className="qty-btn"
-                    onClick={() =>
-                      dispatch({ type: 'decItem', tableId: table.id, productId: item.productId })
-                    }
+                    onClick={() => {
+                      if (item.qty === 1) removeWithConfirm(item.productId, item.name)
+                      else dispatch({ type: 'decItem', tableId: table.id, productId: item.productId })
+                    }}
                   >
                     −
                   </button>
@@ -75,9 +92,7 @@ export default function OrderScreen({ table, products, dispatch, onClose }: Prop
                   <button
                     className="remove-btn"
                     aria-label={`Remove ${item.name}`}
-                    onClick={() =>
-                      dispatch({ type: 'removeItem', tableId: table.id, productId: item.productId })
-                    }
+                    onClick={() => removeWithConfirm(item.productId, item.name)}
                   >
                     ✕
                   </button>
@@ -87,7 +102,7 @@ export default function OrderScreen({ table, products, dispatch, onClose }: Prop
           </div>
           <footer className="order-footer">
             <div className="order-total">
-              <span>Total</span>
+              <span>{t('total')}</span>
               <strong>{fmtEur(total)}</strong>
             </div>
             <button
@@ -95,7 +110,7 @@ export default function OrderScreen({ table, products, dispatch, onClose }: Prop
               disabled={table.order.length === 0}
               onClick={onPay}
             >
-              {confirmPay ? 'Tap again to confirm payment' : 'Mark as paid'}
+              {confirmPay ? t('tapAgainPay') : t('markPaid')}
             </button>
           </footer>
         </section>
@@ -125,9 +140,7 @@ export default function OrderScreen({ table, products, dispatch, onClose }: Prop
                   <span className="price">{fmtEur(p.price)}</span>
                 </button>
               ))}
-            {products.length === 0 && (
-              <div className="empty">No products yet — add some in the Menu tab.</div>
-            )}
+            {products.length === 0 && <div className="empty">{t('noProducts')}</div>}
           </div>
         </section>
       </div>

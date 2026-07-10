@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import type { PaidOrder } from '../types'
 import { fmtEur } from '../types'
-import { exportDayCsv } from '../csv'
+import type { Action } from '../state'
+import { localeOf, useLang, useT } from '../i18n'
+import { TrashIcon } from '../icons'
 
 interface Props {
   history: PaidOrder[]
+  dispatch: React.Dispatch<Action>
 }
 
 function dayBounds(offset: number): { start: number; end: number; date: Date } {
@@ -21,8 +24,20 @@ function isoDay(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-export default function SummaryScreen({ history }: Props) {
+function isoDayBounds(iso: string): { start: number; end: number } {
+  const [y, m, d] = iso.split('-').map(Number)
+  const start = new Date(y, m - 1, d).getTime()
+  const end = new Date(y, m - 1, d + 1).getTime()
+  return { start, end }
+}
+
+export default function SummaryScreen({ history, dispatch }: Props) {
+  const t = useT()
+  const lang = useLang()
   const [offset, setOffset] = useState(0)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [pickedDay, setPickedDay] = useState('')
+
   const { start, end, date } = dayBounds(offset)
 
   const orders = history
@@ -30,12 +45,41 @@ export default function SummaryScreen({ history }: Props) {
     .sort((a, b) => b.paidAt - a.paidAt)
   const revenue = orders.reduce((sum, o) => sum + o.total, 0)
 
+  const locale = localeOf(lang)
   const dayLabel =
     offset === 0
-      ? 'Today'
+      ? t('today')
       : offset === -1
-        ? 'Yesterday'
-        : date.toLocaleDateString('sk-SK', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric' })
+        ? t('yesterday')
+        : date.toLocaleDateString(locale, {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'numeric',
+            year: 'numeric',
+          })
+
+  function deleteShownDay() {
+    if (window.confirm(t('confirmDeleteDay', dayLabel))) {
+      dispatch({ type: 'deleteHistoryRange', start, end })
+      setDeleteOpen(false)
+    }
+  }
+
+  function deletePickedDay() {
+    if (!pickedDay) return
+    if (window.confirm(t('confirmDeleteDay', pickedDay))) {
+      const b = isoDayBounds(pickedDay)
+      dispatch({ type: 'deleteHistoryRange', start: b.start, end: b.end })
+      setDeleteOpen(false)
+    }
+  }
+
+  function deleteAll() {
+    if (window.confirm(t('confirmDeleteAll'))) {
+      dispatch({ type: 'deleteHistoryAll' })
+      setDeleteOpen(false)
+    }
+  }
 
   return (
     <div className="screen">
@@ -55,40 +99,73 @@ export default function SummaryScreen({ history }: Props) {
           </button>
         </div>
         <button
-          className="btn"
-          disabled={orders.length === 0}
-          onClick={() => exportDayCsv([...orders].reverse(), isoDay(date))}
+          className="btn icon danger"
+          aria-label={t('deleteHistory')}
+          disabled={history.length === 0}
+          onClick={() => {
+            setPickedDay(isoDay(date))
+            setDeleteOpen(true)
+          }}
         >
-          ⬇ Export CSV
+          <TrashIcon />
         </button>
       </div>
 
       <div className="stats">
         <div className="stat-card">
-          <div className="label">Revenue</div>
+          <div className="label">{t('revenue')}</div>
           <div className="value">{fmtEur(revenue)}</div>
         </div>
         <div className="stat-card">
-          <div className="label">Paid orders</div>
+          <div className="label">{t('paidOrders')}</div>
           <div className="value">{orders.length}</div>
         </div>
       </div>
 
       {orders.length === 0 ? (
-        <div className="empty">No paid orders on this day.</div>
+        <div className="empty">{t('noOrdersDay')}</div>
       ) : (
         orders.map((o) => (
           <div className="history-row" key={o.id}>
             <span className="time">
-              {new Date(o.paidAt).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' })}
+              {new Date(o.paidAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
             </span>
             <span className="table">{o.tableName}</span>
-            <span className="items">
-              {o.items.map((i) => `${i.qty}× ${i.name}`).join(', ')}
-            </span>
+            <span className="items">{o.items.map((i) => `${i.qty}× ${i.name}`).join(', ')}</span>
             <span className="total">{fmtEur(o.total)}</span>
           </div>
         ))
+      )}
+
+      {deleteOpen && (
+        <div className="modal-backdrop" onClick={() => setDeleteOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{t('deleteHistory')}</h3>
+            <button className="btn danger" disabled={orders.length === 0} onClick={deleteShownDay}>
+              {t('deleteShownDay', dayLabel)}
+            </button>
+            <div className="field">
+              <label>{t('pickDay')}</label>
+              <input
+                type="date"
+                value={pickedDay}
+                onChange={(e) => setPickedDay(e.target.value)}
+              />
+            </div>
+            <button className="btn danger" disabled={!pickedDay} onClick={deletePickedDay}>
+              {t('deletePickedDay')}
+            </button>
+            <button className="btn danger" onClick={deleteAll}>
+              {t('deleteAllHistory')}
+            </button>
+            <div className="modal-actions">
+              <div className="spacer" />
+              <button className="btn" onClick={() => setDeleteOpen(false)}>
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

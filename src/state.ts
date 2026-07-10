@@ -1,12 +1,15 @@
-import type { Area, AppState, Category, Product } from './types'
-import { orderTotal, uid } from './types'
+import type { Area, AppState, Category, PaidOrder, Product, Table } from './types'
+import { DEFAULT_TABLE_H, DEFAULT_TABLE_W, orderTotal, uid } from './types'
+
+export const DEFAULT_CATEGORIES: Category[] = ['Beer', 'Soft drinks', 'Spirits', 'Food', 'Other']
 
 export type Action =
   | { type: 'load'; state: AppState }
-  | { type: 'addTable'; area: Area }
+  | { type: 'addTable'; area: Area; baseName: string }
   | { type: 'renameTable'; id: string; name: string }
   | { type: 'deleteTable'; id: string }
   | { type: 'moveTable'; id: string; x: number; y: number }
+  | { type: 'resizeTable'; id: string; w: number; h: number }
   | { type: 'addItem'; tableId: string; product: Product }
   | { type: 'incItem'; tableId: string; productId: string }
   | { type: 'decItem'; tableId: string; productId: string }
@@ -15,6 +18,10 @@ export type Action =
   | { type: 'addProduct'; name: string; price: number; category: Category }
   | { type: 'updateProduct'; product: Product }
   | { type: 'deleteProduct'; id: string }
+  | { type: 'addCategory'; name: string }
+  | { type: 'deleteCategory'; name: string }
+  | { type: 'deleteHistoryRange'; start: number; end: number }
+  | { type: 'deleteHistoryAll' }
 
 export function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -24,13 +31,15 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'addTable': {
       const inArea = state.tables.filter((t) => t.area === action.area).length
       let n = 1
-      while (state.tables.some((t) => t.name === `Table ${n}`)) n++
-      const table = {
+      while (state.tables.some((t) => t.name === `${action.baseName} ${n}`)) n++
+      const table: Table = {
         id: uid(),
-        name: `Table ${n}`,
+        name: `${action.baseName} ${n}`,
         area: action.area,
         x: 6 + (inArea % 4) * 23,
         y: 8 + Math.floor(inArea / 4) * 28,
+        w: DEFAULT_TABLE_W,
+        h: DEFAULT_TABLE_H,
         order: [],
       }
       return { ...state, tables: [...state.tables, table] }
@@ -55,6 +64,14 @@ export function reducer(state: AppState, action: Action): AppState {
         ...state,
         tables: state.tables.map((t) =>
           t.id === action.id ? { ...t, x: action.x, y: action.y } : t
+        ),
+      }
+
+    case 'resizeTable':
+      return {
+        ...state,
+        tables: state.tables.map((t) =>
+          t.id === action.id ? { ...t, w: action.w, h: action.h } : t
         ),
       }
 
@@ -102,7 +119,7 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'markPaid': {
       const table = state.tables.find((t) => t.id === action.tableId)
       if (!table || table.order.length === 0) return state
-      const paid = {
+      const paid: PaidOrder = {
         id: uid(),
         tableId: table.id,
         tableName: table.name,
@@ -138,18 +155,51 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'deleteProduct':
       return { ...state, products: state.products.filter((p) => p.id !== action.id) }
+
+    case 'addCategory': {
+      const name = action.name.trim()
+      if (!name || state.categories.includes(name)) return state
+      return { ...state, categories: [...state.categories, name] }
+    }
+
+    case 'deleteCategory': {
+      if (state.products.some((p) => p.category === action.name)) return state
+      return { ...state, categories: state.categories.filter((c) => c !== action.name) }
+    }
+
+    case 'deleteHistoryRange':
+      return {
+        ...state,
+        history: state.history.filter(
+          (o) => o.paidAt < action.start || o.paidAt >= action.end
+        ),
+      }
+
+    case 'deleteHistoryAll':
+      return { ...state, history: [] }
   }
 }
 
-function mapTable(
-  state: AppState,
-  tableId: string,
-  fn: (t: AppState['tables'][number]) => AppState['tables'][number]
-): AppState {
+function mapTable(state: AppState, tableId: string, fn: (t: Table) => Table): AppState {
   return {
     ...state,
     tables: state.tables.map((t) => (t.id === tableId ? fn(t) : t)),
   }
+}
+
+/** Upgrades state saved by older app versions (no categories, no table sizes). */
+export function migrate(saved: Partial<AppState>): AppState {
+  const products = saved.products ?? []
+  const categories = [...(saved.categories ?? DEFAULT_CATEGORIES)]
+  for (const p of products) {
+    if (!categories.includes(p.category)) categories.push(p.category)
+  }
+  const tables = (saved.tables ?? []).map((t) => ({
+    ...t,
+    w: t.w ?? DEFAULT_TABLE_W,
+    h: t.h ?? DEFAULT_TABLE_H,
+  }))
+  return { products, categories, tables, history: saved.history ?? [] }
 }
 
 /** Starter data for the first launch so the app is usable immediately. */
@@ -160,15 +210,18 @@ export function seedState(): AppState {
     price,
     category,
   })
-  const table = (name: string, area: Area, x: number, y: number) => ({
+  const table = (name: string, area: Area, x: number, y: number): Table => ({
     id: uid() + Math.random().toString(36).slice(2, 5),
     name,
     area,
     x,
     y,
+    w: DEFAULT_TABLE_W,
+    h: DEFAULT_TABLE_H,
     order: [],
   })
   return {
+    categories: [...DEFAULT_CATEGORIES],
     products: [
       p('Pilsner 0.5l', 2.2, 'Beer'),
       p('Pilsner 0.3l', 1.6, 'Beer'),
