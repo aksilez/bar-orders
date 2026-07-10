@@ -420,6 +420,37 @@ button {
   cursor: nwse-resize;
 }
 
+/* Line end grips — sit at the two ends; drag either end in any direction. */
+.floor-object.line .lh-a {
+  left: -13px;
+  top: 50%;
+  margin-top: -13px;
+  cursor: move;
+}
+
+.floor-object.line .lh-b {
+  right: -13px;
+  top: 50%;
+  margin-top: -13px;
+  cursor: move;
+}
+
+.floor-object.line.vertical .lh-a {
+  left: 50%;
+  top: -13px;
+  margin-top: 0;
+  margin-left: -13px;
+}
+
+.floor-object.line.vertical .lh-b {
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: -13px;
+  margin-top: 0;
+  margin-left: -13px;
+}
+
 .table-name {
   font-weight: 700;
   font-size: 19px;
