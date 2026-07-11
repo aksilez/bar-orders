@@ -12,6 +12,7 @@ import type { PaidInfo } from './components/OrderScreen'
 import OrderScreen from './components/OrderScreen'
 import MenuScreen from './components/MenuScreen'
 import SummaryScreen from './components/SummaryScreen'
+import ChangePinModal from './components/ChangePinModal'
 
 type Screen = 'indoor' | 'outdoor' | 'menu' | 'summary'
 type Theme = 'dark' | 'light'
@@ -30,6 +31,7 @@ export default function App() {
   const [editMode, setEditMode] = useState(false)
   const [openTableId, setOpenTableId] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [changePinOpen, setChangePinOpen] = useState(false)
   const [toast, setToast] = useState<PaidInfo | null>(null)
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem('bar-orders-theme') as Theme | null) ?? 'dark'
@@ -185,6 +187,12 @@ export default function App() {
                   </button>
                 </div>
               </div>
+              <div className="field">
+                <label>{t('pinSection')}</label>
+                <button className="btn" onClick={() => setChangePinOpen(true)}>
+                  {t('changePin')}
+                </button>
+              </div>
               <div className="modal-actions">
                 <div className="spacer" />
                 <button className="btn" onClick={() => setSettingsOpen(false)}>
@@ -194,6 +202,8 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {changePinOpen && <ChangePinModal onClose={() => setChangePinOpen(false)} />}
       </div>
     </I18nContext.Provider>
   )

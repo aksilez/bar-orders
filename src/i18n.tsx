@@ -72,6 +72,12 @@ const STRINGS = {
     paidToast: '“{0}” paid',
     enterPin: 'Enter PIN',
     wrongPin: 'Wrong PIN, try again',
+    pinSection: 'History PIN',
+    changePin: 'Change PIN',
+    enterNewPin: 'Enter a new PIN',
+    repeatNewPin: 'Repeat the new PIN',
+    pinMismatch: 'PINs do not match, try again',
+    pinChanged: 'PIN changed',
   },
   sk: {
     indoor: 'Interiér',
@@ -142,6 +148,12 @@ const STRINGS = {
     paidToast: '„{0}“ zaplatené',
     enterPin: 'Zadaj PIN',
     wrongPin: 'Nesprávny PIN, skús znova',
+    pinSection: 'PIN pre históriu',
+    changePin: 'Zmeniť PIN',
+    enterNewPin: 'Zadaj nový PIN',
+    repeatNewPin: 'Zopakuj nový PIN',
+    pinMismatch: 'PIN sa nezhoduje, skús znova',
+    pinChanged: 'PIN zmenený',
   },
 } satisfies Record<Lang, Record<string, string>>
 

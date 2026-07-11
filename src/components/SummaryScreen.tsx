@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { PaidOrder } from '../types'
 import { fmtEur } from '../types'
 import type { Action } from '../state'
 import { localeOf, useLang, useT } from '../i18n'
 import { TrashIcon } from '../icons'
+import { getPin } from '../pin'
 import ConfirmButton from './ConfirmButton'
-
-const HISTORY_PIN = '0000'
+import PinPad from './PinPad'
 
 interface Props {
   history: PaidOrder[]
@@ -69,7 +69,6 @@ export default function SummaryScreen({ history, dispatch }: Props) {
             month: 'numeric',
             year: 'numeric',
           })
-
 
   return (
     <div className="screen">
@@ -296,63 +295,31 @@ function CalendarPicker({
 
 function PinModal({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) {
   const t = useT()
-  const [pin, setPin] = useState('')
   const [wrong, setWrong] = useState(false)
+  const [resetKey, setResetKey] = useState(0)
 
-  useEffect(() => {
-    if (pin.length !== 4) return
-    if (pin === HISTORY_PIN) {
+  function onComplete(pin: string) {
+    if (pin === getPin()) {
       onSuccess()
     } else {
       setWrong(true)
-      const id = window.setTimeout(() => {
-        setPin('')
+      window.setTimeout(() => {
         setWrong(false)
+        setResetKey((k) => k + 1)
       }, 700)
-      return () => clearTimeout(id)
     }
-  }, [pin, onSuccess])
-
-  // In-app number pad instead of a text input: no iOS keyboard, no keychain
-  // key icon, no autofill — nothing for the browser to remember.
-  function press(digit: string) {
-    if (wrong || pin.length >= 4) return
-    setPin(pin + digit)
   }
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal pin-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>{t('enterPin')}</h3>
-        <div className={'pin-dots' + (wrong ? ' wrong' : '')}>
-          {[0, 1, 2, 3].map((i) => (
-            <span key={i} className={'pin-dot' + (i < pin.length ? ' filled' : '')} />
-          ))}
-        </div>
-        <p className={'hint pin-hint' + (wrong ? ' wrong' : '')}>{wrong ? t('wrongPin') : ' '}</p>
-        <div className="pin-pad">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
-            <button key={d} className="pin-key" onClick={() => press(d)}>
-              {d}
-            </button>
-          ))}
-          <span />
-          <button className="pin-key" onClick={() => press('0')}>
-            0
-          </button>
-          <button
-            className="pin-key backspace"
-            aria-label="backspace"
-            onClick={() => {
-              // backspace during the "wrong" flash clears everything — otherwise
-              // it would cancel the auto-reset timer and lock the pad
-              setPin(wrong ? '' : pin.slice(0, -1))
-              setWrong(false)
-            }}
-          >
-            ⌫
-          </button>
-        </div>
+        <PinPad
+          title={t('enterPin')}
+          hint={wrong ? t('wrongPin') : undefined}
+          wrong={wrong}
+          resetKey={resetKey}
+          onComplete={onComplete}
+        />
         <div className="modal-actions">
           <div className="spacer" />
           <button className="btn" onClick={onClose}>

@@ -1230,6 +1230,12 @@ button {
   text-align: center;
 }
 
+.pin-done {
+  text-align: center;
+  color: var(--green);
+  padding: 24px 0;
+}
+
 .pin-hint.wrong {
   color: var(--red);
 }
