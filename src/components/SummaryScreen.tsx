@@ -320,8 +320,7 @@ function PinModal({ onSuccess, onClose }: { onSuccess: () => void; onClose: () =
           resetKey={resetKey}
           onComplete={onComplete}
         />
-        <div className="modal-actions">
-          <div className="spacer" />
+        <div className="modal-actions pin-cancel">
           <button className="btn" onClick={onClose}>
             {t('cancel')}
           </button>
