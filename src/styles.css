@@ -1390,13 +1390,13 @@ button {
   width: 100%;
 }
 
-/* Cancel sits centered under the pad, aligned with the middle (0) column. */
+/* Cancel spans the full width of the pad, centered under it. */
 .pin-modal .modal-actions.pin-cancel {
   justify-content: center;
 }
 
 .pin-cancel .btn {
-  width: 76px;
+  width: 248px;
 }
 
 @keyframes pin-shake {
