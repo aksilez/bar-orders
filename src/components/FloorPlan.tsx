@@ -228,6 +228,7 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
     d.moved = true
     // follow the finger freely — snapping happens on release
     const rect = plan.getBoundingClientRect()
+    if (!rect.width || !rect.height) return // avoid divide-by-zero during layout transitions
     const xPx = clamp((d.origX / 100) * rect.width + dx, 0, rect.width - d.w)
     const yPx = clamp((d.origY / 100) * rect.height + dy, 0, rect.height - d.h)
     d.lastXPx = xPx
@@ -338,6 +339,7 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
     const plan = planRef.current
     if (!r || !plan) return
     const rect = plan.getBoundingClientRect()
+    if (!rect.width || !rect.height) return // avoid divide-by-zero during layout transitions
     const g =
       r.mode === 'line'
         ? computeLineResize(r, e.clientX - rect.left, e.clientY - rect.top)

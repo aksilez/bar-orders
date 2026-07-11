@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Category, Product } from '../types'
 import { fmtEur, sortProducts } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
+import { PencilIcon } from '../icons'
 import ConfirmButton from './ConfirmButton'
 
 interface Props {
@@ -23,16 +24,14 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
   const [form, setForm] = useState<FormState | null>(null)
   const [catName, setCatName] = useState<string | null>(null)
   const [editingCat, setEditingCat] = useState<Category | null>(null)
-  const [collapsed, setCollapsed] = useState<Set<Category>>(new Set())
+  const [selected, setSelected] = useState<Category>(categories[0] ?? '')
 
-  function toggleCollapsed(cat: Category) {
-    setCollapsed((prev) => {
-      const next = new Set(prev)
-      if (next.has(cat)) next.delete(cat)
-      else next.add(cat)
-      return next
-    })
-  }
+  // Keep a valid category selected as the list changes.
+  useEffect(() => {
+    if (!categories.includes(selected) && categories.length > 0) setSelected(categories[0])
+  }, [categories, selected])
+
+  const inCat = sortProducts(products.filter((p) => p.category === selected))
 
   const parsedPrice = form ? parseFloat(form.price.replace(',', '.')) : NaN
   const formValid =
@@ -61,73 +60,92 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
 
   function saveCategory() {
     const name = (catName ?? '').trim()
-    if (name) dispatch({ type: 'addCategory', name })
+    if (name) {
+      dispatch({ type: 'addCategory', name })
+      setSelected(name)
+    }
     setCatName(null)
   }
 
   return (
-    <div className="screen">
-      <div className="screen-header">
-        <h2>{t('menu')}</h2>
-        <div className="header-actions">
-          <button className="btn" onClick={() => setCatName('')}>
-            {t('addCategory')}
+    <div className="screen menu-screen">
+      <div className="menu-layout">
+        <aside className="menu-sidebar">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              className={'menu-cat' + (cat === selected ? ' on' : '')}
+              onClick={() => setSelected(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+          <button className="menu-cat add" onClick={() => setCatName('')}>
+            + {t('addCategory').replace(/^\+\s*/, '')}
           </button>
-          <button
-            className="btn primary"
-            onClick={() => setForm({ name: '', price: '', category: categories[0] ?? '' })}
-          >
-            {t('addProduct')}
-          </button>
-        </div>
-      </div>
+        </aside>
 
-      {categories.map((cat) => {
-        const inCat = sortProducts(products.filter((p) => p.category === cat))
-        const isCollapsed = collapsed.has(cat)
-        return (
-          <section key={cat} className="cat-section">
-            <div className="cat-head">
-              <button className="cat-head-btn" onClick={() => setEditingCat(cat)}>
-                <h3>{cat}</h3>
-              </button>
-              <button
-                className={'cat-collapse' + (isCollapsed ? '' : ' open')}
-                aria-label={isCollapsed ? 'expand' : 'collapse'}
-                onClick={() => toggleCollapsed(cat)}
-              >
-                ›
-              </button>
-            </div>
-            {!isCollapsed && inCat.length === 0 && <p className="hint">{t('emptyCategory')}</p>}
-            {!isCollapsed && inCat.map((p) => (
-              <div className="product-row" key={p.id}>
+        <section className="menu-detail">
+          {categories.length === 0 ? (
+            <div className="empty">{t('emptyCategory')}</div>
+          ) : (
+            <>
+              <div className="detail-head">
+                <h2>{selected}</h2>
                 <button
-                  className={'star-btn' + (p.favorite ? ' on' : '')}
-                  aria-label="favorite"
-                  onClick={() => dispatch({ type: 'toggleFavorite', id: p.id })}
+                  className="btn icon"
+                  aria-label={t('editCategory')}
+                  onClick={() => setEditingCat(selected)}
                 >
-                  {p.favorite ? '★' : '☆'}
+                  <PencilIcon size={20} />
                 </button>
-                <span className="name">{p.name}</span>
-                <span className="price">{fmtEur(p.price)}</span>
+                <div className="spacer" />
                 <button
-                  className="btn"
-                  onClick={() =>
-                    setForm({ id: p.id, name: p.name, price: p.price.toFixed(2), category: p.category })
-                  }
+                  className="btn primary"
+                  onClick={() => setForm({ name: '', price: '', category: selected })}
                 >
-                  {t('edit')}
+                  {t('addProduct')}
                 </button>
-                <ConfirmButton
-                  label={t('delete')}
-                  onConfirm={() => dispatch({ type: 'deleteProduct', id: p.id })}
-                />
               </div>
-            ))}
-          </section>
-        )
-      })}
+
+              {inCat.length === 0 ? (
+                <div className="empty">{t('emptyCategory')}</div>
+              ) : (
+                <div className="prod-list">
+                  {inCat.map((p) => (
+                    <div
+                      key={p.id}
+                      className="prod-row"
+                      onClick={() =>
+                        setForm({
+                          id: p.id,
+                          name: p.name,
+                          price: p.price.toFixed(2),
+                          category: p.category,
+                        })
+                      }
+                    >
+                      <button
+                        className={'star-btn' + (p.favorite ? ' on' : '')}
+                        aria-label="favorite"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          dispatch({ type: 'toggleFavorite', id: p.id })
+                        }}
+                      >
+                        {p.favorite ? '★' : '☆'}
+                      </button>
+                      <span className="name">{p.name}</span>
+                      <span className="price">{fmtEur(p.price)}</span>
+                      <span className="chev">›</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      </div>
 
       {form && (
         <div className="modal-backdrop" onClick={() => setForm(null)}>
@@ -164,6 +182,15 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
               </select>
             </div>
             <div className="modal-actions">
+              {form.id && (
+                <ConfirmButton
+                  label={t('delete')}
+                  onConfirm={() => {
+                    dispatch({ type: 'deleteProduct', id: form.id! })
+                    setForm(null)
+                  }}
+                />
+              )}
               <div className="spacer" />
               <button className="btn" onClick={() => setForm(null)}>
                 {t('cancel')}
