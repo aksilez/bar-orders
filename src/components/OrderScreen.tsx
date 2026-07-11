@@ -115,6 +115,10 @@ export default function OrderScreen({
   }
 
   const totalSelectedUnits = [...moveQty.values()].reduce((sum, n) => sum + n, 0)
+  const selectedTotal = table.order.reduce(
+    (sum, i) => sum + (moveQty.get(i.productId) ?? 0) * i.price,
+    0
+  )
 
   function onPickDestination(toTableId: string) {
     dispatch({
@@ -123,6 +127,19 @@ export default function OrderScreen({
       toTableId,
       items: [...moveQty.entries()].map(([productId, qty]) => ({ productId, qty })),
     })
+    cancelMove()
+    onClose()
+  }
+
+  function paySelected() {
+    const paidId = uid()
+    dispatch({
+      type: 'payItems',
+      tableId: table.id,
+      paidId,
+      items: [...moveQty.entries()].map(([productId, qty]) => ({ productId, qty })),
+    })
+    onPaid({ paidId, tableName: table.name, total: selectedTotal })
     cancelMove()
     onClose()
   }
@@ -240,6 +257,13 @@ export default function OrderScreen({
             <footer className="order-footer move-footer">
               <button className="btn" onClick={toggleSelectAll}>
                 {fullySelected ? t('clearSelection') : t('selectAll')}
+              </button>
+              <button
+                className="btn pay"
+                disabled={totalSelectedUnits === 0}
+                onClick={paySelected}
+              >
+                {t('paySelected', fmtEur(selectedTotal))}
               </button>
               <div className="move-footer-actions">
                 <button className="btn" onClick={cancelMove}>

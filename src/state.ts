@@ -1,4 +1,13 @@
-import type { Area, AppState, Category, FloorObject, PaidOrder, Product, Table } from './types'
+import type {
+  Area,
+  AppState,
+  Category,
+  FloorObject,
+  OrderItem,
+  PaidOrder,
+  Product,
+  Table,
+} from './types'
 import {
   DEFAULT_TABLE_H,
   DEFAULT_TABLE_W,
@@ -34,6 +43,12 @@ export type Action =
       items: { productId: string; qty: number }[]
     }
   | { type: 'markPaid'; tableId: string; paidId: string }
+  | {
+      type: 'payItems'
+      tableId: string
+      paidId: string
+      items: { productId: string; qty: number }[]
+    }
   | { type: 'undoPaid'; paidId: string }
   | { type: 'addProduct'; name: string; price: number; category: Category }
   | { type: 'updateProduct'; product: Product }
@@ -231,6 +246,38 @@ export function reducer(state: AppState, action: Action): AppState {
         tables: state.tables.map((t) =>
           t.id === table.id ? { ...t, order: [] } : t
         ),
+      }
+    }
+
+    case 'payItems': {
+      const table = state.tables.find((t) => t.id === action.tableId)
+      if (!table || action.items.length === 0) return state
+      const paidItems: OrderItem[] = []
+      let remaining = [...table.order]
+      for (const { productId, qty } of action.items) {
+        const item = remaining.find((i) => i.productId === productId)
+        if (!item) continue
+        const payQty = Math.min(qty, item.qty)
+        if (payQty <= 0) continue
+        paidItems.push({ ...item, qty: payQty })
+        remaining =
+          payQty >= item.qty
+            ? remaining.filter((i) => i.productId !== productId)
+            : remaining.map((i) => (i.productId === productId ? { ...i, qty: i.qty - payQty } : i))
+      }
+      if (paidItems.length === 0) return state
+      const paid: PaidOrder = {
+        id: action.paidId,
+        tableId: table.id,
+        tableName: table.name,
+        items: paidItems,
+        total: orderTotal(paidItems),
+        paidAt: Date.now(),
+      }
+      return {
+        ...state,
+        history: [...state.history, paid],
+        tables: state.tables.map((t) => (t.id === table.id ? { ...t, order: remaining } : t)),
       }
     }
 
