@@ -3,7 +3,6 @@ import type { Category, Product } from '../types'
 import { fmtEur, sortProducts } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
-import { PencilIcon } from '../icons'
 import ConfirmButton from './ConfirmButton'
 
 interface Props {
@@ -105,24 +104,25 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
           ) : (
             <>
               <div className="detail-head">
-                <h2>{isFav ? t('favorites') : selected}</h2>
+                {isFav ? (
+                  <h2>{t('favorites')}</h2>
+                ) : (
+                  <button
+                    className="cat-title-btn"
+                    aria-label={t('editCategory')}
+                    onClick={() => setEditingCat(selected)}
+                  >
+                    <h2>{selected}</h2>
+                  </button>
+                )}
+                <div className="spacer" />
                 {!isFav && (
-                  <>
-                    <button
-                      className="btn icon"
-                      aria-label={t('editCategory')}
-                      onClick={() => setEditingCat(selected)}
-                    >
-                      <PencilIcon size={20} />
-                    </button>
-                    <div className="spacer" />
-                    <button
-                      className="btn primary"
-                      onClick={() => setForm({ name: '', price: '', category: selected })}
-                    >
-                      {t('addProduct')}
-                    </button>
-                  </>
+                  <button
+                    className="btn primary"
+                    onClick={() => setForm({ name: '', price: '', category: selected })}
+                  >
+                    {t('addProduct')}
+                  </button>
                 )}
               </div>
 

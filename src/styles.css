@@ -833,6 +833,28 @@ button {
   white-space: nowrap;
 }
 
+/* Category title doubles as the edit button — tap it to rename/delete. */
+.cat-title-btn {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  padding: 6px 12px;
+  margin-left: -12px;
+  min-width: 0;
+  transition: background 0.15s ease, transform 0.08s ease;
+}
+
+.cat-title-btn:hover {
+  background: var(--panel-2);
+}
+
+.cat-title-btn:active {
+  background: var(--panel-2);
+  transform: scale(0.98);
+}
+
 .prod-list {
   display: flex;
   flex-direction: column;
