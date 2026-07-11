@@ -19,6 +19,9 @@ interface FormState {
   category: Category
 }
 
+/** Sentinel for the virtual "Favorites" category in the sidebar. */
+const FAV = '__fav__'
+
 export default function MenuScreen({ products, categories, dispatch }: Props) {
   const t = useT()
   const [form, setForm] = useState<FormState | null>(null)
@@ -28,10 +31,15 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
 
   // Keep a valid category selected as the list changes.
   useEffect(() => {
-    if (!categories.includes(selected) && categories.length > 0) setSelected(categories[0])
+    if (selected !== FAV && !categories.includes(selected) && categories.length > 0) {
+      setSelected(categories[0])
+    }
   }, [categories, selected])
 
-  const inCat = sortProducts(products.filter((p) => p.category === selected))
+  const isFav = selected === FAV
+  const shown = isFav
+    ? sortProducts(products.filter((p) => p.favorite))
+    : sortProducts(products.filter((p) => p.category === selected))
 
   const parsedPrice = form ? parseFloat(form.price.replace(',', '.')) : NaN
   const formValid =
@@ -71,6 +79,12 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
     <div className="screen menu-screen">
       <div className="menu-layout">
         <aside className="menu-sidebar">
+          <button
+            className={'menu-cat fav' + (isFav ? ' on' : '')}
+            onClick={() => setSelected(FAV)}
+          >
+            <span className="fav-ico">★</span> {t('favorites')}
+          </button>
           {categories.map((cat) => (
             <button
               key={cat}
@@ -86,33 +100,37 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
         </aside>
 
         <section className="menu-detail">
-          {categories.length === 0 ? (
+          {categories.length === 0 && !isFav ? (
             <div className="empty">{t('emptyCategory')}</div>
           ) : (
             <>
               <div className="detail-head">
-                <h2>{selected}</h2>
-                <button
-                  className="btn icon"
-                  aria-label={t('editCategory')}
-                  onClick={() => setEditingCat(selected)}
-                >
-                  <PencilIcon size={20} />
-                </button>
-                <div className="spacer" />
-                <button
-                  className="btn primary"
-                  onClick={() => setForm({ name: '', price: '', category: selected })}
-                >
-                  {t('addProduct')}
-                </button>
+                <h2>{isFav ? t('favorites') : selected}</h2>
+                {!isFav && (
+                  <>
+                    <button
+                      className="btn icon"
+                      aria-label={t('editCategory')}
+                      onClick={() => setEditingCat(selected)}
+                    >
+                      <PencilIcon size={20} />
+                    </button>
+                    <div className="spacer" />
+                    <button
+                      className="btn primary"
+                      onClick={() => setForm({ name: '', price: '', category: selected })}
+                    >
+                      {t('addProduct')}
+                    </button>
+                  </>
+                )}
               </div>
 
-              {inCat.length === 0 ? (
-                <div className="empty">{t('emptyCategory')}</div>
+              {shown.length === 0 ? (
+                <div className="empty">{isFav ? t('favEmpty') : t('emptyCategory')}</div>
               ) : (
                 <div className="prod-list">
-                  {inCat.map((p) => (
+                  {shown.map((p) => (
                     <div
                       key={p.id}
                       className="prod-row"

@@ -803,6 +803,15 @@ button {
   margin-top: 4px;
 }
 
+.menu-cat.fav {
+  margin-bottom: 4px;
+}
+
+.menu-cat.fav .fav-ico {
+  color: var(--amber);
+  margin-right: 4px;
+}
+
 .menu-detail {
   flex: 1;
   overflow-y: auto;
