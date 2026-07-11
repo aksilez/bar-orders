@@ -602,12 +602,114 @@ button {
   font-size: 20px;
 }
 
+/* ---------- Move items between tables ---------- */
+
+.move-hint {
+  padding: 8px 12px 0;
+  text-align: center;
+}
+
+.order-item.move-row {
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.order-item.move-row.selected {
+  border-color: var(--accent);
+  background: linear-gradient(rgba(79, 142, 247, 0.12), rgba(79, 142, 247, 0.12)), var(--panel);
+}
+
+.move-check {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.move-check.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 .order-footer {
   padding: 12px;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.move-footer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.move-footer-actions .btn.primary {
+  flex: 1;
+}
+
+/* ---------- Table picker (move destination) ---------- */
+
+.table-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.table-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-height: 56px;
+  transition: background 0.15s ease, transform 0.06s ease;
+}
+
+.table-pick-row:active {
+  background: var(--panel-2);
+  transform: scale(0.99);
+}
+
+.table-pick-row .area-badge {
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px 7px;
+  flex-shrink: 0;
+}
+
+.table-pick-row .name {
+  flex: 1;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-pick-row .pick-total {
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.table-pick-row .pick-free {
+  color: var(--green);
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .order-total {

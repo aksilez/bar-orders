@@ -141,6 +141,7 @@ export default function App() {
         {openTable && (
           <OrderScreen
             table={openTable}
+            allTables={state.tables}
             products={state.products}
             categories={state.categories}
             dispatch={dispatch}

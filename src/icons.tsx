@@ -54,6 +54,15 @@ export function GearIcon(props: IconProps) {
   )
 }
 
+export function MoveIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M5 12h14" />
+      <path d="M13 6l6 6-6 6" />
+    </Svg>
+  )
+}
+
 export function PencilIcon(props: IconProps) {
   return (
     <Svg {...props}>
