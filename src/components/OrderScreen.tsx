@@ -3,7 +3,7 @@ import type { Category, OrderItem, Product, Table } from '../types'
 import { fmtEur, orderTotal, sortProducts, uid } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
-import { MoveIcon } from '../icons'
+import { SelectIcon } from '../icons'
 import ConfirmButton from './ConfirmButton'
 import TablePickerModal from './TablePickerModal'
 
@@ -45,7 +45,18 @@ export default function OrderScreen({
   // productId -> quantity to move (0 = not present). Defaults to the full
   // quantity when a row is first selected — tap the stepper to move fewer.
   const [moveQty, setMoveQty] = useState<Map<string, number>>(new Map())
+  const [confirmPaySel, setConfirmPaySel] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+
+  // Two-tap confirm for "Pay selected" — resets after 3 s, or if the selection changes.
+  useEffect(() => {
+    if (!confirmPaySel) return
+    const id = window.setTimeout(() => setConfirmPaySel(false), 3000)
+    return () => clearTimeout(id)
+  }, [confirmPaySel])
+  useEffect(() => {
+    setConfirmPaySel(false)
+  }, [moveQty])
 
   // Keep a valid tab selected if the lists change.
   useEffect(() => {
@@ -132,6 +143,10 @@ export default function OrderScreen({
   }
 
   function paySelected() {
+    if (!confirmPaySel) {
+      setConfirmPaySel(true)
+      return
+    }
     const paidId = uid()
     dispatch({
       type: 'payItems',
@@ -153,7 +168,7 @@ export default function OrderScreen({
         <div className="header-actions">
           {!moveMode && table.order.length > 0 && (
             <button className="btn" onClick={startMove}>
-              <MoveIcon size={18} /> {t('moveItems')}
+              <SelectIcon size={18} /> {t('moveItems')}
             </button>
           )}
           <button className="btn ok" onClick={onClose}>
@@ -259,11 +274,11 @@ export default function OrderScreen({
                 {fullySelected ? t('clearSelection') : t('selectAll')}
               </button>
               <button
-                className="btn pay"
+                className={'btn pay' + (confirmPaySel ? ' confirm' : '')}
                 disabled={totalSelectedUnits === 0}
                 onClick={paySelected}
               >
-                {t('paySelected', fmtEur(selectedTotal))}
+                {confirmPaySel ? t('tapAgainPay') : t('paySelected', fmtEur(selectedTotal))}
               </button>
               <div className="move-footer-actions">
                 <button className="btn" onClick={cancelMove}>
