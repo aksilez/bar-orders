@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Category, Product, Table } from '../types'
+import type { Category, OrderItem, Product, Table } from '../types'
 import { fmtEur, orderTotal, sortProducts, uid } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
@@ -42,7 +42,9 @@ export default function OrderScreen({
   const [cat, setCat] = useState<Category>(() => (favorites.length > 0 ? FAV : cats[0] ?? ''))
   const [confirmPay, setConfirmPay] = useState(false)
   const [moveMode, setMoveMode] = useState(false)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
+  // productId -> quantity to move (0 = not present). Defaults to the full
+  // quantity when a row is first selected — tap the stepper to move fewer.
+  const [moveQty, setMoveQty] = useState<Map<string, number>>(new Map())
   const [pickerOpen, setPickerOpen] = useState(false)
 
   // Keep a valid tab selected if the lists change.
@@ -76,36 +78,50 @@ export default function OrderScreen({
 
   function startMove() {
     setMoveMode(true)
-    setSelected(new Set())
+    setMoveQty(new Map())
   }
 
   function cancelMove() {
     setMoveMode(false)
-    setSelected(new Set())
+    setMoveQty(new Map())
     setPickerOpen(false)
   }
 
-  function toggleSelect(productId: string) {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(productId)) next.delete(productId)
-      else next.add(productId)
+  function toggleSelect(item: OrderItem) {
+    setMoveQty((prev) => {
+      const next = new Map(prev)
+      if (next.has(item.productId)) next.delete(item.productId)
+      else next.set(item.productId, item.qty) // select the full line by default
       return next
     })
   }
 
-  function toggleSelectAll() {
-    setSelected((prev) =>
-      prev.size === table.order.length ? new Set() : new Set(table.order.map((i) => i.productId))
-    )
+  function adjustSelectedQty(item: OrderItem, delta: number) {
+    setMoveQty((prev) => {
+      const next = new Map(prev)
+      const current = next.get(item.productId) ?? 0
+      const clamped = Math.max(0, Math.min(current + delta, item.qty))
+      if (clamped === 0) next.delete(item.productId)
+      else next.set(item.productId, clamped)
+      return next
+    })
   }
+
+  const fullySelected =
+    table.order.length > 0 && table.order.every((i) => moveQty.get(i.productId) === i.qty)
+
+  function toggleSelectAll() {
+    setMoveQty(fullySelected ? new Map() : new Map(table.order.map((i) => [i.productId, i.qty])))
+  }
+
+  const totalSelectedUnits = [...moveQty.values()].reduce((sum, n) => sum + n, 0)
 
   function onPickDestination(toTableId: string) {
     dispatch({
       type: 'moveItems',
       fromTableId: table.id,
       toTableId,
-      productIds: [...selected],
+      items: [...moveQty.entries()].map(([productId, qty]) => ({ productId, qty })),
     })
     cancelMove()
     onClose()
@@ -117,14 +133,16 @@ export default function OrderScreen({
     <div className="order-screen">
       <header className="order-header">
         <h2>{table.name}</h2>
-        {!moveMode && table.order.length > 0 && (
-          <button className="btn" onClick={startMove}>
-            <MoveIcon size={18} /> {t('moveItems')}
+        <div className="header-actions">
+          {!moveMode && table.order.length > 0 && (
+            <button className="btn" onClick={startMove}>
+              <MoveIcon size={18} /> {t('moveItems')}
+            </button>
+          )}
+          <button className="btn ok" onClick={onClose}>
+            ✓ {t('confirm')}
           </button>
-        )}
-        <button className="btn ok" onClick={onClose}>
-          ✓ {t('confirm')}
-        </button>
+        </div>
       </header>
 
       <div className="order-body">
@@ -134,24 +152,40 @@ export default function OrderScreen({
             {table.order.length === 0 ? (
               <div className="empty">{t('noItems')}</div>
             ) : moveMode ? (
-              table.order.map((item) => (
-                <div
-                  className={'order-item move-row' + (selected.has(item.productId) ? ' selected' : '')}
-                  key={item.productId}
-                  onClick={() => toggleSelect(item.productId)}
-                >
-                  <span className={'move-check' + (selected.has(item.productId) ? ' on' : '')}>
-                    {selected.has(item.productId) && '✓'}
-                  </span>
-                  <div className="item-info">
-                    <span className="item-name">{item.name}</span>
-                    <span className="item-unit">
-                      {item.qty} × {fmtEur(item.price)}
+              table.order.map((item) => {
+                const sel = moveQty.get(item.productId) ?? 0
+                const isSelected = sel > 0
+                return (
+                  <div
+                    className={'order-item move-row' + (isSelected ? ' selected' : '')}
+                    key={item.productId}
+                    onClick={() => toggleSelect(item)}
+                  >
+                    <span className={'move-check' + (isSelected ? ' on' : '')}>
+                      {isSelected && '✓'}
                     </span>
+                    <div className="item-info">
+                      <span className="item-name">{item.name}</span>
+                      <span className="item-unit">
+                        {item.qty} × {fmtEur(item.price)}
+                      </span>
+                    </div>
+                    {isSelected && item.qty > 1 ? (
+                      <div className="move-stepper" onClick={(e) => e.stopPropagation()}>
+                        <button className="move-step-btn" onClick={() => adjustSelectedQty(item, -1)}>
+                          −
+                        </button>
+                        <span className="move-step-val">{sel}</span>
+                        <button className="move-step-btn" onClick={() => adjustSelectedQty(item, 1)}>
+                          +
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="line-total">{fmtEur(item.price * item.qty)}</span>
+                    )}
                   </div>
-                  <span className="line-total">{fmtEur(item.price * item.qty)}</span>
-                </div>
-              ))
+                )
+              })
             ) : (
               table.order.map((item) => (
                 <div className="order-item" key={item.productId}>
@@ -205,7 +239,7 @@ export default function OrderScreen({
           {moveMode ? (
             <footer className="order-footer move-footer">
               <button className="btn" onClick={toggleSelectAll}>
-                {selected.size === table.order.length ? t('clearSelection') : t('selectAll')}
+                {fullySelected ? t('clearSelection') : t('selectAll')}
               </button>
               <div className="move-footer-actions">
                 <button className="btn" onClick={cancelMove}>
@@ -213,10 +247,10 @@ export default function OrderScreen({
                 </button>
                 <button
                   className="btn primary"
-                  disabled={selected.size === 0}
+                  disabled={totalSelectedUnits === 0}
                   onClick={() => setPickerOpen(true)}
                 >
-                  {t('moveSelected', String(selected.size))}
+                  {t('moveSelected', String(totalSelectedUnits))}
                 </button>
               </div>
             </footer>

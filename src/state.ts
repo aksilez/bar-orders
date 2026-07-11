@@ -27,7 +27,12 @@ export type Action =
   | { type: 'incItem'; tableId: string; productId: string }
   | { type: 'decItem'; tableId: string; productId: string }
   | { type: 'removeItem'; tableId: string; productId: string }
-  | { type: 'moveItems'; fromTableId: string; toTableId: string; productIds: string[] }
+  | {
+      type: 'moveItems'
+      fromTableId: string
+      toTableId: string
+      items: { productId: string; qty: number }[]
+    }
   | { type: 'markPaid'; tableId: string; paidId: string }
   | { type: 'undoPaid'; paidId: string }
   | { type: 'addProduct'; name: string; price: number; category: Category }
@@ -182,21 +187,28 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'moveItems': {
       const from = state.tables.find((t) => t.id === action.fromTableId)
       const to = state.tables.find((t) => t.id === action.toTableId)
-      if (!from || !to || from.id === to.id) return state
-      const moving = from.order.filter((i) => action.productIds.includes(i.productId))
-      if (moving.length === 0) return state
-      const remaining = from.order.filter((i) => !action.productIds.includes(i.productId))
-      const merged = [...to.order]
-      for (const item of moving) {
-        const idx = merged.findIndex((m) => m.productId === item.productId)
-        if (idx >= 0) merged[idx] = { ...merged[idx], qty: merged[idx].qty + item.qty }
-        else merged.push(item)
+      if (!from || !to || from.id === to.id || action.items.length === 0) return state
+      let fromOrder = [...from.order]
+      const toOrder = [...to.order]
+      for (const { productId, qty } of action.items) {
+        const idx = fromOrder.findIndex((i) => i.productId === productId)
+        if (idx < 0) continue
+        const item = fromOrder[idx]
+        const moveQty = Math.min(qty, item.qty)
+        if (moveQty <= 0) continue
+        fromOrder =
+          moveQty >= item.qty
+            ? fromOrder.filter((i) => i.productId !== productId)
+            : fromOrder.map((i) => (i.productId === productId ? { ...i, qty: i.qty - moveQty } : i))
+        const toIdx = toOrder.findIndex((i) => i.productId === productId)
+        if (toIdx >= 0) toOrder[toIdx] = { ...toOrder[toIdx], qty: toOrder[toIdx].qty + moveQty }
+        else toOrder.push({ ...item, qty: moveQty })
       }
       return {
         ...state,
         tables: state.tables.map((t) => {
-          if (t.id === from.id) return { ...t, order: remaining }
-          if (t.id === to.id) return { ...t, order: merged }
+          if (t.id === from.id) return { ...t, order: fromOrder }
+          if (t.id === to.id) return { ...t, order: toOrder }
           return t
         }),
       }
