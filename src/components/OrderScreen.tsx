@@ -5,6 +5,7 @@ import type { Action } from '../state'
 import { useT } from '../i18n'
 import { SelectIcon } from '../icons'
 import ConfirmButton from './ConfirmButton'
+import ScrollBox from './ScrollBox'
 import TablePickerModal from './TablePickerModal'
 
 export interface PaidInfo {
@@ -180,7 +181,7 @@ export default function OrderScreen({
       <div className="order-body">
         <section className="order-left">
           {moveMode && <p className="hint move-hint">{t('moveHint')}</p>}
-          <div className="order-items">
+          <ScrollBox>
             {table.order.length === 0 ? (
               <div className="empty">{t('noItems')}</div>
             ) : moveMode ? (
@@ -267,7 +268,7 @@ export default function OrderScreen({
                 </div>
               ))
             )}
-          </div>
+          </ScrollBox>
           {moveMode ? (
             <footer className="order-footer move-footer">
               <button className="btn" onClick={toggleSelectAll}>
