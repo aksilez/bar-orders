@@ -1840,3 +1840,200 @@ button {
   background: var(--accent);
   color: #fff;
 }
+
+/* ---------- Overview chart ---------- */
+
+.chart-screen {
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-periods {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.chart-periods.sub {
+  margin-top: -4px;
+}
+
+.seg-btn {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.seg-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.chart-nav {
+  margin-bottom: 8px;
+}
+
+.chart-readout {
+  text-align: center;
+  margin: 4px 0 14px;
+}
+
+.chart-readout .value {
+  font-size: 30px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-readout .label {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 220px;
+  padding: 0 2px;
+}
+
+.chart-col {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  background: none;
+  border: none;
+  padding: 0;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.chart-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 2px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--panel-2);
+  transition: opacity 0.15s ease;
+}
+
+.chart-col.sel .chart-bar {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+.chart-bar .seg.cash {
+  background: var(--green);
+}
+
+.chart-bar .seg.card {
+  background: var(--accent);
+}
+
+.chart-bar .seg.tip {
+  background: #8a6cd6;
+}
+
+.chart-x {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  height: 14px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-filters {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chart-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.filter-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.filter-chip.cash.active {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.filter-chip.tip.active {
+  background: #8a6cd6;
+  border-color: #8a6cd6;
+  color: #fff;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-legend .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.chart-legend .dot.cash {
+  background: var(--green);
+}
+
+.chart-legend .dot.card {
+  background: var(--accent);
+}
+
+.chart-legend .dot.tip {
+  background: #8a6cd6;
+}

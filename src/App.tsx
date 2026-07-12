@@ -12,12 +12,13 @@ import type { PaidInfo } from './components/OrderScreen'
 import OrderScreen from './components/OrderScreen'
 import MenuScreen from './components/MenuScreen'
 import SummaryScreen from './components/SummaryScreen'
+import ChartScreen from './components/ChartScreen'
 import ChangePinModal from './components/ChangePinModal'
 
-type Screen = 'indoor' | 'outdoor' | 'menu' | 'summary'
+type Screen = 'indoor' | 'outdoor' | 'menu' | 'chart' | 'summary'
 type Theme = 'dark' | 'light'
 
-const SCREEN_IDS: Screen[] = ['indoor', 'outdoor', 'menu', 'summary']
+const SCREEN_IDS: Screen[] = ['indoor', 'outdoor', 'menu', 'chart', 'summary']
 
 function rootReducer(state: AppState | null, action: Action): AppState | null {
   if (action.type === 'load') return action.state
@@ -86,7 +87,7 @@ export default function App() {
                 className={'tab' + (screen === id ? ' active' : '')}
                 onClick={() => {
                   setScreen(id)
-                  if (id === 'menu' || id === 'summary') setEditMode(false)
+                  if (id === 'menu' || id === 'summary' || id === 'chart') setEditMode(false)
                 }}
               >
                 {t(id)}
@@ -134,6 +135,7 @@ export default function App() {
             dispatch={dispatch}
           />
         )}
+        {screen === 'chart' && <ChartScreen history={state.history} />}
         {screen === 'summary' && (
           <SummaryScreen history={state.history} dispatch={dispatch} />
         )}
