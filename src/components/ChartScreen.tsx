@@ -157,6 +157,7 @@ export default function ChartScreen({ history }: Props) {
     filter === 'all' ? d.cash + d.card : filter === 'cash' ? d.cash : filter === 'card' ? d.card : d.tip
 
   const max = Math.max(1, ...data.map(valueOf))
+  const niceTop = niceCeil(max)
   const shownTotal = data.reduce((sum, d) => sum + valueOf(d), 0)
 
   // Sparse x-axis labels when there are many bars.
@@ -225,36 +226,55 @@ export default function ChartScreen({ history }: Props) {
       {shownTotal === 0 ? (
         <div className="empty">{t('noSales')}</div>
       ) : (
-        <div className="chart-bars">
-          {data.map((d, i) => {
-            const v = valueOf(d)
-            const h = (v / max) * 100
-            return (
-              <button
-                key={i}
-                className={'chart-col' + (sel === i ? ' sel' : '')}
-                onClick={() => setSel(sel === i ? null : i)}
-                title={buckets[i].full}
-              >
-                <div className="chart-bar" style={{ height: `${h}%` }}>
-                  {filter === 'all' ? (
-                    <>
-                      {d.card > 0 && (
-                        <div className="seg card" style={{ height: `${(d.card / v) * 100}%` }} />
-                      )}
-                      {d.cash > 0 && (
-                        <div className="seg cash" style={{ height: `${(d.cash / v) * 100}%` }} />
-                      )}
-                    </>
-                  ) : (
-                    <div className={'seg ' + filter} style={{ height: '100%' }} />
-                  )}
+        <>
+          <div className="chart-plot">
+            <div className="chart-grid">
+              {[1, 0.75, 0.5, 0.25, 0].map((f) => (
+                <div className="grid-line" key={f} style={{ bottom: `${f * 100}%` }}>
+                  <span className="grid-label">{axisLabel(niceTop * f)}</span>
                 </div>
-                <span className="chart-x">{i % labelEvery === 0 ? buckets[i].label : ''}</span>
-              </button>
-            )
-          })}
-        </div>
+              ))}
+            </div>
+            <div className="chart-bars">
+              {data.map((d, i) => {
+                const v = valueOf(d)
+                const h = (v / niceTop) * 100
+                const showV = buckets.length <= 12 && v > 0
+                return (
+                  <button
+                    key={i}
+                    className={'chart-col' + (sel === i ? ' sel' : '')}
+                    onClick={() => setSel(sel === i ? null : i)}
+                    title={buckets[i].full}
+                  >
+                    <div className="chart-bar" style={{ height: `${h}%` }}>
+                      {showV && <span className="chart-v">{axisLabel(v)}</span>}
+                      {filter === 'all' ? (
+                        <>
+                          {d.card > 0 && (
+                            <div className="seg card" style={{ height: `${(d.card / v) * 100}%` }} />
+                          )}
+                          {d.cash > 0 && (
+                            <div className="seg cash" style={{ height: `${(d.cash / v) * 100}%` }} />
+                          )}
+                        </>
+                      ) : (
+                        <div className={'seg ' + filter} style={{ height: '100%' }} />
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div className="chart-xrow">
+            {buckets.map((b, i) => (
+              <span className="chart-x" key={i}>
+                {i % labelEvery === 0 ? b.label : ''}
+              </span>
+            ))}
+          </div>
+        </>
       )}
 
       <div className="chart-filters">
@@ -305,4 +325,19 @@ export default function ChartScreen({ history }: Props) {
 
 function currentKey(period: Period): 'thisWeek' | 'thisMonth' | 'thisYear' {
   return period === 'week' ? 'thisWeek' : period === 'month' ? 'thisMonth' : 'thisYear'
+}
+
+/** Round a value up to a clean 1/2/5 × 10ⁿ so gridlines land on tidy numbers. */
+function niceCeil(v: number): number {
+  if (v <= 0) return 1
+  const pow = Math.pow(10, Math.floor(Math.log10(v)))
+  const n = v / pow
+  const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10
+  return step * pow
+}
+
+/** Compact euro label for axis ticks and bar tops. */
+function axisLabel(v: number): string {
+  if (v >= 1000) return Math.round(v / 100) / 10 + 'k €'
+  return Math.round(v) + ' €'
 }

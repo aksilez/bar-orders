@@ -59,6 +59,7 @@ export type Action =
   | { type: 'addCategory'; name: string }
   | { type: 'renameCategory'; oldName: string; newName: string }
   | { type: 'deleteCategory'; name: string }
+  | { type: 'moveCategory'; name: string; dir: -1 | 1 }
   | { type: 'deleteHistoryRange'; start: number; end: number }
   | { type: 'deleteHistoryAll' }
 
@@ -351,6 +352,15 @@ export function reducer(state: AppState, action: Action): AppState {
         categories: state.categories.filter((c) => c !== action.name),
         products: state.products.filter((p) => p.category !== action.name),
       }
+
+    case 'moveCategory': {
+      const idx = state.categories.indexOf(action.name)
+      const j = idx + action.dir
+      if (idx < 0 || j < 0 || j >= state.categories.length) return state
+      const cats = [...state.categories]
+      ;[cats[idx], cats[j]] = [cats[j], cats[idx]]
+      return { ...state, categories: cats }
+    }
 
     case 'deleteHistoryRange':
       return {

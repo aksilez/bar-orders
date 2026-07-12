@@ -1148,6 +1148,109 @@ button {
   margin-top: 4px;
 }
 
+/* ---------- Category editor ---------- */
+
+.cat-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-bottom: 4px;
+}
+
+.cat-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-2);
+  border-radius: 12px;
+  padding: 6px 8px 6px 6px;
+}
+
+.cat-move {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.cat-move-btn {
+  width: 38px;
+  height: 44px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 20px;
+  border-radius: 8px;
+}
+
+.cat-move-btn:disabled {
+  color: var(--border);
+}
+
+.cat-move-btn:active:not(:disabled) {
+  background: var(--panel);
+}
+
+.cat-edit-name {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 0 10px;
+}
+
+.cat-edit-name:focus {
+  border-color: var(--accent);
+  background: var(--panel);
+  outline: none;
+}
+
+.cat-count {
+  flex-shrink: 0;
+  min-width: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cat-del {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cat-del.armed {
+  background: var(--red, #e5484d);
+  color: #fff;
+}
+
+.cat-add {
+  margin-top: 12px;
+}
+
+.cat-add-row {
+  display: flex;
+  gap: 8px;
+}
+
+.cat-add-row input {
+  flex: 1;
+  min-width: 0;
+}
+
 
 .menu-detail {
   flex: 1;
@@ -1897,12 +2000,47 @@ button {
   margin-top: 2px;
 }
 
+.chart-plot {
+  position: relative;
+  height: 240px;
+  padding-left: 46px;
+}
+
+.chart-grid {
+  position: absolute;
+  left: 46px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--border);
+}
+
+.grid-line:last-child {
+  border-top-style: solid;
+}
+
+.grid-label {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: -8px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .chart-bars {
+  position: relative;
+  height: 100%;
   display: flex;
   align-items: flex-end;
-  gap: 3px;
-  height: 220px;
-  padding: 0 2px;
+  gap: 6px;
 }
 
 .chart-col {
@@ -1916,24 +2054,28 @@ button {
   background: none;
   border: none;
   padding: 0;
-  gap: 6px;
   cursor: pointer;
 }
 
 .chart-bar {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: 2px;
-  border-radius: 5px;
-  overflow: hidden;
-  background: var(--panel-2);
-  transition: opacity 0.15s ease;
+  min-height: 3px;
+  transition: filter 0.15s ease;
 }
 
 .chart-col.sel .chart-bar {
-  outline: 2px solid var(--text);
-  outline-offset: 1px;
+  filter: brightness(1.2);
+}
+
+.chart-bar .seg {
+  width: 100%;
+}
+
+.chart-bar .seg:first-child {
+  border-radius: 6px 6px 0 0;
 }
 
 .chart-bar .seg.cash {
@@ -1948,11 +2090,32 @@ button {
   background: #8a6cd6;
 }
 
-.chart-x {
+.chart-v {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-xrow {
+  display: flex;
+  gap: 6px;
+  margin-top: 7px;
+  padding-left: 46px;
+}
+
+.chart-xrow .chart-x {
+  flex: 1;
+  min-width: 0;
   font-size: 11px;
   color: var(--muted);
   text-align: center;
-  height: 14px;
   overflow: hidden;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;

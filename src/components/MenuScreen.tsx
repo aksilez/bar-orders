@@ -3,6 +3,7 @@ import type { Category, Product } from '../types'
 import { fmtEur, sortProducts } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
+import { TrashIcon } from '../icons'
 import ConfirmButton from './ConfirmButton'
 
 interface Props {
@@ -24,8 +25,8 @@ const ALL = '__all__'
 export default function MenuScreen({ products, categories, dispatch }: Props) {
   const t = useT()
   const [form, setForm] = useState<FormState | null>(null)
-  const [catName, setCatName] = useState<string | null>(null)
   const [editingCat, setEditingCat] = useState<Category | null>(null)
+  const [editorOpen, setEditorOpen] = useState(false)
   const [selected, setSelected] = useState<Category>(ALL)
 
   // Keep a valid category selected as the list changes.
@@ -63,14 +64,6 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
     setForm(null)
   }
 
-  function saveCategory() {
-    const name = (catName ?? '').trim()
-    if (name) {
-      dispatch({ type: 'addCategory', name })
-      setSelected(name)
-    }
-    setCatName(null)
-  }
 
   return (
     <div className="screen menu-screen">
@@ -91,8 +84,8 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
               {cat}
             </button>
           ))}
-          <button className="menu-cat add" onClick={() => setCatName('')}>
-            + {t('addCategory').replace(/^\+\s*/, '')}
+          <button className="menu-cat add" onClick={() => setEditorOpen(true)}>
+            {t('editCategories')}
           </button>
         </aside>
 
@@ -215,30 +208,13 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
         </div>
       )}
 
-      {catName !== null && (
-        <div className="modal-backdrop" onClick={() => setCatName(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{t('newCategory')}</h3>
-            <div className="field">
-              <label>{t('categoryName')}</label>
-              <input
-                value={catName}
-                autoFocus
-                onChange={(e) => setCatName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && saveCategory()}
-              />
-            </div>
-            <div className="modal-actions">
-              <div className="spacer" />
-              <button className="btn" onClick={() => setCatName(null)}>
-                {t('cancel')}
-              </button>
-              <button className="btn primary" disabled={!catName.trim()} onClick={saveCategory}>
-                {t('add')}
-              </button>
-            </div>
-          </div>
-        </div>
+      {editorOpen && (
+        <CategoryEditor
+          categories={categories}
+          products={products}
+          dispatch={dispatch}
+          onClose={() => setEditorOpen(false)}
+        />
       )}
 
       {editingCat !== null && (
@@ -306,6 +282,137 @@ function EditCategoryModal({
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Reorder (↑/↓), rename, delete and add categories in one place. */
+function CategoryEditor({
+  categories,
+  products,
+  dispatch,
+  onClose,
+}: {
+  categories: Category[]
+  products: Product[]
+  dispatch: React.Dispatch<Action>
+  onClose: () => void
+}) {
+  const t = useT()
+  const [newName, setNewName] = useState('')
+
+  function add() {
+    const name = newName.trim()
+    if (name) dispatch({ type: 'addCategory', name })
+    setNewName('')
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>{t('editCategories')}</h3>
+
+        <div className="cat-edit-list">
+          {categories.length === 0 ? (
+            <div className="empty">{t('emptyCategory')}</div>
+          ) : (
+            categories.map((cat, i) => (
+              <CategoryRow
+                key={cat}
+                cat={cat}
+                count={products.filter((p) => p.category === cat).length}
+                isFirst={i === 0}
+                isLast={i === categories.length - 1}
+                dispatch={dispatch}
+              />
+            ))
+          )}
+        </div>
+
+        <div className="field cat-add">
+          <label>{t('newCategory')}</label>
+          <div className="cat-add-row">
+            <input
+              value={newName}
+              placeholder={t('categoryName')}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && add()}
+            />
+            <button className="btn primary" disabled={!newName.trim()} onClick={add}>
+              {t('add')}
+            </button>
+          </div>
+        </div>
+
+        <div className="modal-actions">
+          <div className="spacer" />
+          <button className="btn" onClick={onClose}>
+            {t('close')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CategoryRow({
+  cat,
+  count,
+  isFirst,
+  isLast,
+  dispatch,
+}: {
+  cat: Category
+  count: number
+  isFirst: boolean
+  isLast: boolean
+  dispatch: React.Dispatch<Action>
+}) {
+  const t = useT()
+  const [name, setName] = useState(cat)
+
+  useEffect(() => setName(cat), [cat])
+
+  function commit() {
+    const n = name.trim()
+    if (n && n !== cat) dispatch({ type: 'renameCategory', oldName: cat, newName: n })
+    else setName(cat)
+  }
+
+  return (
+    <div className="cat-edit-row">
+      <div className="cat-move">
+        <button
+          className="cat-move-btn"
+          disabled={isFirst}
+          aria-label={t('moveUp')}
+          onClick={() => dispatch({ type: 'moveCategory', name: cat, dir: -1 })}
+        >
+          ↑
+        </button>
+        <button
+          className="cat-move-btn"
+          disabled={isLast}
+          aria-label={t('moveDown')}
+          onClick={() => dispatch({ type: 'moveCategory', name: cat, dir: 1 })}
+        >
+          ↓
+        </button>
+      </div>
+      <input
+        className="cat-edit-name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+      />
+      {count > 0 && <span className="cat-count">{count}</span>}
+      <ConfirmButton
+        className="cat-del"
+        label={<TrashIcon size={18} />}
+        armedLabel="✓"
+        onConfirm={() => dispatch({ type: 'deleteCategory', name: cat })}
+      />
     </div>
   )
 }
