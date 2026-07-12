@@ -41,7 +41,7 @@ export default function OrderScreen({
   const t = useT()
   const cats = categories.filter((c) => products.some((p) => p.category === c))
   const favorites = sortProducts(products.filter((p) => p.favorite))
-  const [cat, setCat] = useState<Category>(() => (favorites.length > 0 ? FAV : cats[0] ?? ''))
+  const [cat, setCat] = useState<Category>(ALL)
   const [confirmPay, setConfirmPay] = useState(false)
   const [moveMode, setMoveMode] = useState(false)
   // productId -> quantity to move (0 = not present). Defaults to the full
