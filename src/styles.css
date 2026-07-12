@@ -2060,7 +2060,7 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  align-items: stretch;
+  align-items: center;
   background: none;
   border: none;
   padding: 0;
@@ -2069,6 +2069,8 @@ button {
 
 .chart-bar {
   position: relative;
+  width: 100%;
+  max-width: 42px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
