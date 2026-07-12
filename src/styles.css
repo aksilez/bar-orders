@@ -566,7 +566,6 @@ button {
 
 .order-item {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   background: var(--panel);
@@ -576,10 +575,8 @@ button {
   margin-bottom: 8px;
 }
 
-/* Name gets its own full-width line so it never has to fight the stepper
-   for space; the controls wrap onto the line below it. */
 .item-info {
-  flex: 1 1 100%;
+  flex: 1;
   min-width: 0;
 }
 
@@ -587,7 +584,9 @@ button {
   display: block;
   font-weight: 600;
   font-size: 17px;
-  overflow-wrap: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .item-unit {
@@ -621,7 +620,6 @@ button {
 }
 
 .line-total {
-  margin-left: auto;
   width: 78px;
   text-align: right;
   font-weight: 700;
