@@ -8,6 +8,7 @@ import ConfirmButton from './ConfirmButton'
 import ScrollBox from './ScrollBox'
 import TablePickerModal from './TablePickerModal'
 import CashModal from './CashModal'
+import CardModal from './CardModal'
 
 /** Which pay flow is active — the whole tab or just the selected items. */
 type PayScope = 'all' | 'selected'
@@ -52,6 +53,7 @@ export default function OrderScreen({
   // Payment flow: first tap opens the cash/card choice; cash opens the modal.
   const [payChoosing, setPayChoosing] = useState<PayScope | null>(null)
   const [cashFor, setCashFor] = useState<PayScope | null>(null)
+  const [cardFor, setCardFor] = useState<PayScope | null>(null)
 
   // Reset the payment choice if the selection changes underneath it.
   useEffect(() => {
@@ -126,10 +128,10 @@ export default function OrderScreen({
     onClose()
   }
 
-  // Card is instant; cash opens the change calculator first.
+  // Both methods open a modal — cash for change/tip, card for an optional tip.
   function chooseMethod(scope: PayScope, method: PaymentMethod) {
     setPayChoosing(null)
-    if (method === 'card') doPay(scope, 'card')
+    if (method === 'card') setCardFor(scope)
     else setCashFor(scope)
   }
 
@@ -151,6 +153,7 @@ export default function OrderScreen({
       cancelMove()
     }
     setCashFor(null)
+    setCardFor(null)
     onClose()
   }
 
@@ -377,6 +380,14 @@ export default function OrderScreen({
           total={cashFor === 'all' ? total : selectedTotal}
           onConfirm={(tip) => doPay(cashFor, 'cash', tip)}
           onClose={() => setCashFor(null)}
+        />
+      )}
+
+      {cardFor && (
+        <CardModal
+          total={cardFor === 'all' ? total : selectedTotal}
+          onConfirm={(tip) => doPay(cardFor, 'card', tip)}
+          onClose={() => setCardFor(null)}
         />
       )}
     </div>

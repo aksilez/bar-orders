@@ -900,36 +900,46 @@ button {
   color: #b7a4ec;
 }
 
-.cash-tip-btn {
-  width: 100%;
-  margin-top: 8px;
+.cash-input.tip {
+  text-align: right;
+  color: #c3b3f0;
+}
+
+.cash-tip-quick {
+  flex-shrink: 0;
+  padding: 0 14px;
   min-height: 44px;
   border-radius: 10px;
   background: rgba(150, 120, 240, 0.14);
   border: 1px solid rgba(150, 120, 240, 0.5);
   color: #c3b3f0;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  white-space: nowrap;
 }
 
-.cash-tip-btn.undo {
-  background: none;
-  border-color: var(--border);
-  color: var(--muted);
+.cash-tip-quick:disabled {
+  opacity: 0.4;
 }
 
-.cash-tip-btn:active {
-  transform: scale(0.98);
+.cash-tip-quick:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.card-tips {
+  grid-template-columns: repeat(5, 1fr);
 }
 
 .cash-actions {
   display: flex;
   gap: 10px;
   margin-top: 18px;
+}
+
+.cash-actions .btn.pay-card {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .cash-actions .btn {
@@ -2050,15 +2060,7 @@ button {
   height: 100%;
   display: flex;
   align-items: flex-end;
-  justify-content: flex-end;
   gap: 6px;
-}
-
-/* Week has few bars — keep them a fixed width, tight together, to the right. */
-.chart-bars.tight .chart-col,
-.chart-xrow.tight .chart-x {
-  flex: 0 0 auto;
-  width: 58px;
 }
 
 .chart-col {
@@ -2118,7 +2120,6 @@ button {
 
 .chart-xrow {
   display: flex;
-  justify-content: flex-end;
   gap: 6px;
   margin-top: 7px;
   padding-left: 46px;

@@ -17,28 +17,41 @@ function labelFor(v: number): string {
   return v >= 1 ? `${v} €` : `${v.toFixed(2)} €`
 }
 
+function round2(v: number): number {
+  return Math.round(v * 100) / 100
+}
+
 /**
- * Cash payment. The staff can type the amount the customer handed over, or
- * tap denomination buttons (each tap adds up). The change to give is shown
- * live. Confirming with nothing entered still finalises the payment.
+ * Cash payment. The staff enters how much the customer handed over and,
+ * separately, a tip. Change to give = given − total − tip. The tip can be
+ * typed, set by rounding the bill up, or set to the whole remaining change.
  */
 export default function CashModal({ total, onConfirm, onClose }: Props) {
   const t = useT()
   const [given, setGiven] = useState('')
-  const [keepChange, setKeepChange] = useState(false)
+  const [tip, setTip] = useState('')
 
-  const num = parseFloat(given.replace(',', '.'))
-  const hasInput = given.trim() !== '' && isFinite(num) && num > 0
-  const givenNum = isFinite(num) ? num : 0
-  const diff = givenNum - total
-  const short = hasInput && diff < 0
-  const rawChange = hasInput && diff > 0 ? Math.round(diff * 100) / 100 : 0
-  const tip = keepChange ? rawChange : 0
+  const givenNum = parseFloat(given.replace(',', '.'))
+  const hasGiven = given.trim() !== '' && isFinite(givenNum) && givenNum > 0
+  const tipNum = Math.max(0, isFinite(parseFloat(tip.replace(',', '.'))) ? parseFloat(tip.replace(',', '.')) : 0)
+  const change = (hasGiven ? givenNum : total) - total - tipNum
+  const short = hasGiven && change < 0
 
-  const add = (v: number) => {
+  const addGiven = (v: number) => {
     const cur = parseFloat(given.replace(',', '.'))
-    const base = isFinite(cur) ? cur : 0
-    setGiven((Math.round((base + v) * 100) / 100).toFixed(2))
+    setGiven(round2((isFinite(cur) ? cur : 0) + v).toFixed(2))
+  }
+
+  // Round the bill up to the next whole euro → the difference becomes the tip.
+  function roundUp() {
+    const up = Math.ceil(total + 0.001)
+    setTip(round2(up - total).toFixed(2))
+  }
+
+  // Leave all the change as a tip (nothing to give back).
+  function keepAll() {
+    if (!hasGiven) return
+    setTip(round2(Math.max(0, givenNum - total)).toFixed(2))
   }
 
   return (
@@ -69,40 +82,41 @@ export default function CashModal({ total, onConfirm, onClose }: Props) {
 
         <div className="cash-notes">
           {DENOMS.map((v) => (
-            <button key={v} className="cash-note" onClick={() => add(v)}>
+            <button key={v} className="cash-note" onClick={() => addGiven(v)}>
               {labelFor(v)}
             </button>
           ))}
         </div>
 
-        {keepChange ? (
-          <div className="cash-change tip">
-            <span>{t('tip')}</span>
-            <strong>{fmtEur(tip)}</strong>
+        <div className="field">
+          <label>{t('tip')}</label>
+          <div className="cash-input-row">
+            <input
+              className="cash-input tip"
+              value={tip}
+              inputMode="decimal"
+              placeholder="0.00"
+              onChange={(e) => setTip(e.target.value)}
+            />
+            <button className="cash-tip-quick" onClick={roundUp}>
+              {t('roundUp')}
+            </button>
+            <button className="cash-tip-quick" disabled={!hasGiven} onClick={keepAll}>
+              {t('keepAllChange')}
+            </button>
           </div>
-        ) : (
-          <div className={'cash-change' + (short ? ' short' : '')}>
-            <span>{short ? t('amountShort') : t('changeDue')}</span>
-            <strong>{hasInput ? fmtEur(Math.abs(diff)) : '—'}</strong>
-          </div>
-        )}
+        </div>
 
-        {rawChange > 0 &&
-          (keepChange ? (
-            <button className="cash-tip-btn undo" onClick={() => setKeepChange(false)}>
-              {t('tipUndo')}
-            </button>
-          ) : (
-            <button className="cash-tip-btn" onClick={() => setKeepChange(true)}>
-              <CashIcon size={16} /> {t('keepChangeTip', fmtEur(rawChange))}
-            </button>
-          ))}
+        <div className={'cash-change' + (short ? ' short' : '')}>
+          <span>{short ? t('amountShort') : t('changeDue')}</span>
+          <strong>{hasGiven ? fmtEur(Math.abs(change)) : '—'}</strong>
+        </div>
 
         <div className="cash-actions">
           <button className="btn" onClick={onClose}>
             {t('cancel')}
           </button>
-          <button className="btn pay" disabled={short} onClick={() => onConfirm(tip)}>
+          <button className="btn pay" disabled={short} onClick={() => onConfirm(tipNum)}>
             <CashIcon size={18} /> {t('confirmPayment')}
           </button>
         </div>

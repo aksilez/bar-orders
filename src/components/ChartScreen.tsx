@@ -154,7 +154,13 @@ export default function ChartScreen({ history }: Props) {
   )
 
   const valueOf = (d: { cash: number; card: number; tip: number }) =>
-    filter === 'all' ? d.cash + d.card : filter === 'cash' ? d.cash : filter === 'card' ? d.card : d.tip
+    filter === 'all'
+      ? d.cash + d.card + d.tip
+      : filter === 'cash'
+        ? d.cash
+        : filter === 'card'
+          ? d.card
+          : d.tip
 
   const max = Math.max(1, ...data.map(valueOf))
   const niceTop = niceCeil(max)
@@ -218,7 +224,7 @@ export default function ChartScreen({ history }: Props) {
                 </div>
               ))}
             </div>
-            <div className={'chart-bars' + (period === 'week' ? ' tight' : '')}>
+            <div className="chart-bars">
               {data.map((d, i) => {
                 const v = valueOf(d)
                 const h = (v / niceTop) * 100
@@ -234,6 +240,9 @@ export default function ChartScreen({ history }: Props) {
                     <div className="chart-bar" style={{ height: `${h}%` }}>
                       {filter === 'all' ? (
                         <>
+                          {d.tip > 0 && (
+                            <div className="seg tip" style={{ height: `${(d.tip / v) * 100}%` }} />
+                          )}
                           {d.card > 0 && (
                             <div className="seg card" style={{ height: `${(d.card / v) * 100}%` }} />
                           )}
@@ -250,7 +259,7 @@ export default function ChartScreen({ history }: Props) {
               })}
             </div>
           </div>
-          <div className={'chart-xrow' + (period === 'week' ? ' tight' : '')}>
+          <div className="chart-xrow">
             {buckets.map((b, i) => (
               <span className="chart-x" key={i}>
                 {i % labelEvery === 0 ? b.label : ''}
