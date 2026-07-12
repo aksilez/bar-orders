@@ -218,7 +218,7 @@ export default function ChartScreen({ history }: Props) {
                 </div>
               ))}
             </div>
-            <div className="chart-bars">
+            <div className={'chart-bars' + (period === 'week' ? ' tight' : '')}>
               {data.map((d, i) => {
                 const v = valueOf(d)
                 const h = (v / niceTop) * 100
@@ -230,8 +230,8 @@ export default function ChartScreen({ history }: Props) {
                     onClick={() => setSel(sel === i ? null : i)}
                     title={buckets[i].full}
                   >
+                    {showV && <span className="chart-v">{axisLabel(v)}</span>}
                     <div className="chart-bar" style={{ height: `${h}%` }}>
-                      {showV && <span className="chart-v">{axisLabel(v)}</span>}
                       {filter === 'all' ? (
                         <>
                           {d.card > 0 && (
@@ -250,7 +250,7 @@ export default function ChartScreen({ history }: Props) {
               })}
             </div>
           </div>
-          <div className="chart-xrow">
+          <div className={'chart-xrow' + (period === 'week' ? ' tight' : '')}>
             {buckets.map((b, i) => (
               <span className="chart-x" key={i}>
                 {i % labelEvery === 0 ? b.label : ''}

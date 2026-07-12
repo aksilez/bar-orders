@@ -2050,7 +2050,15 @@ button {
   height: 100%;
   display: flex;
   align-items: flex-end;
+  justify-content: flex-end;
   gap: 6px;
+}
+
+/* Week has few bars — keep them a fixed width, tight together, to the right. */
+.chart-bars.tight .chart-col,
+.chart-xrow.tight .chart-x {
+  flex: 0 0 auto;
+  width: 58px;
 }
 
 .chart-col {
@@ -2068,13 +2076,14 @@ button {
 }
 
 .chart-bar {
-  position: relative;
   width: 100%;
   max-width: 42px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: 3px;
+  min-height: 4px;
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
   transition: filter 0.15s ease;
 }
 
@@ -2084,10 +2093,6 @@ button {
 
 .chart-bar .seg {
   width: 100%;
-}
-
-.chart-bar .seg:first-child {
-  border-radius: 6px 6px 0 0;
 }
 
 .chart-bar .seg.cash {
@@ -2103,10 +2108,6 @@ button {
 }
 
 .chart-v {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
   margin-bottom: 5px;
   font-size: 11px;
   font-weight: 600;
@@ -2117,6 +2118,7 @@ button {
 
 .chart-xrow {
   display: flex;
+  justify-content: flex-end;
   gap: 6px;
   margin-top: 7px;
   padding-left: 46px;
