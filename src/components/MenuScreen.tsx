@@ -98,7 +98,8 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
             className={'menu-cat fav' + (isFav ? ' on' : '')}
             onClick={() => setSelected(FAV)}
           >
-            <span className="fav-ico">★</span> {t('favorites')}
+            {t('favorites')}
+            <span className="fav-ico">★</span>
           </button>
           {categories.map((cat) => (
             <button

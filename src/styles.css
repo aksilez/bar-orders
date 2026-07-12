@@ -937,12 +937,13 @@ button {
 }
 
 .menu-cat.fav {
-  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
 }
 
 .menu-cat.fav .fav-ico {
   color: var(--amber);
-  margin-right: 4px;
+  margin-left: auto;
 }
 
 .menu-detail {
