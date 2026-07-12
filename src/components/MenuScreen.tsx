@@ -20,6 +20,7 @@ interface FormState {
 
 /** Sentinel for the virtual "Favorites" category in the sidebar. */
 const FAV = '__fav__'
+const ALL = '__all__'
 
 export default function MenuScreen({ products, categories, dispatch }: Props) {
   const t = useT()
@@ -30,15 +31,24 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
 
   // Keep a valid category selected as the list changes.
   useEffect(() => {
-    if (selected !== FAV && !categories.includes(selected) && categories.length > 0) {
+    if (
+      selected !== FAV &&
+      selected !== ALL &&
+      !categories.includes(selected) &&
+      categories.length > 0
+    ) {
       setSelected(categories[0])
     }
   }, [categories, selected])
 
   const isFav = selected === FAV
+  const isAll = selected === ALL
+  const virtual = isFav || isAll
   const shown = isFav
     ? sortProducts(products.filter((p) => p.favorite))
-    : sortProducts(products.filter((p) => p.category === selected))
+    : isAll
+      ? sortProducts(products)
+      : sortProducts(products.filter((p) => p.category === selected))
 
   const parsedPrice = form ? parseFloat(form.price.replace(',', '.')) : NaN
   const formValid =
@@ -93,19 +103,25 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
               {cat}
             </button>
           ))}
+          <button
+            className={'menu-cat all' + (isAll ? ' on' : '')}
+            onClick={() => setSelected(ALL)}
+          >
+            {t('allProducts')}
+          </button>
           <button className="menu-cat add" onClick={() => setCatName('')}>
             + {t('addCategory').replace(/^\+\s*/, '')}
           </button>
         </aside>
 
         <section className="menu-detail">
-          {categories.length === 0 && !isFav ? (
+          {categories.length === 0 && !virtual ? (
             <div className="empty">{t('emptyCategory')}</div>
           ) : (
             <>
               <div className="detail-head">
-                {isFav ? (
-                  <h2>{t('favorites')}</h2>
+                {virtual ? (
+                  <h2>{isFav ? t('favorites') : t('allProducts')}</h2>
                 ) : (
                   <button
                     className="cat-title-btn"
@@ -116,7 +132,7 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
                   </button>
                 )}
                 <div className="spacer" />
-                {!isFav && (
+                {!virtual && (
                   <button
                     className="btn primary"
                     onClick={() => setForm({ name: '', price: '', category: selected })}
