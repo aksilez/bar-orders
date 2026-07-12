@@ -25,8 +25,9 @@ interface Props {
   onPaid: (info: PaidInfo) => void
 }
 
-/** Sentinel tab id for the favorites tab in the product picker. */
+/** Sentinel tab ids for the virtual tabs in the product picker. */
 const FAV = '__fav__'
+const ALL = '__all__'
 
 export default function OrderScreen({
   table,
@@ -61,12 +62,17 @@ export default function OrderScreen({
 
   // Keep a valid tab selected if the lists change.
   useEffect(() => {
-    const valid = cat === FAV ? favorites.length > 0 : cats.includes(cat)
+    const valid =
+      cat === ALL ? products.length > 0 : cat === FAV ? favorites.length > 0 : cats.includes(cat)
     if (!valid) setCat(favorites.length > 0 ? FAV : cats[0] ?? '')
-  }, [cats, cat, favorites.length])
+  }, [cats, cat, favorites.length, products.length])
 
   const shownProducts =
-    cat === FAV ? favorites : sortProducts(products.filter((p) => p.category === cat))
+    cat === ALL
+      ? sortProducts(products)
+      : cat === FAV
+        ? favorites
+        : sortProducts(products.filter((p) => p.category === cat))
 
   // Two-tap confirmation for "Mark as paid" — resets itself after 3 s.
   useEffect(() => {
@@ -320,6 +326,12 @@ export default function OrderScreen({
 
         <section className="product-picker">
           <div className="cat-tabs">
+            <button
+              className={'cat-tab' + (cat === ALL ? ' active' : '')}
+              onClick={() => setCat(ALL)}
+            >
+              {t('allProducts')}
+            </button>
             {favorites.length > 0 && (
               <button
                 className={'cat-tab fav' + (cat === FAV ? ' active' : '')}
