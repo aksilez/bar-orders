@@ -39,20 +39,34 @@ export default function SummaryScreen({ history, dispatch }: Props) {
   const [pinOpen, setPinOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [pickedDays, setPickedDays] = useState<string[]>([])
+  const [filter, setFilter] = useState<'all' | 'cash' | 'card'>('all')
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const { start, end, date } = dayBounds(offset)
   const locale = localeOf(lang)
 
-  const orders = history
+  const dayOrders = history
     .filter((o) => o.paidAt >= start && o.paidAt < end)
     .sort((a, b) => b.paidAt - a.paidAt)
-  const revenue = orders.reduce((sum, o) => sum + o.total, 0)
-  const cashRevenue = orders
+  const cashRevenue = dayOrders
     .filter((o) => o.method === 'cash')
     .reduce((sum, o) => sum + o.total, 0)
-  const cardRevenue = orders
+  const cardRevenue = dayOrders
     .filter((o) => o.method === 'card')
     .reduce((sum, o) => sum + o.total, 0)
+
+  // The method filter narrows the visible list and the stat cards.
+  const orders = filter === 'all' ? dayOrders : dayOrders.filter((o) => o.method === filter)
+  const revenue = orders.reduce((sum, o) => sum + o.total, 0)
+
+  function toggleExpanded(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   // Days that actually have orders — only these are tappable in the calendar.
   const daysWithOrders = useMemo(() => {
@@ -110,7 +124,7 @@ export default function SummaryScreen({ history, dispatch }: Props) {
         <div className="stat-card">
           <div className="label">{t('revenue')}</div>
           <div className="value">{fmtEur(revenue)}</div>
-          {revenue > 0 && (cashRevenue > 0 || cardRevenue > 0) && (
+          {filter === 'all' && revenue > 0 && (cashRevenue > 0 || cardRevenue > 0) && (
             <div className="stat-split">
               <span>
                 <CashIcon size={14} /> {fmtEur(cashRevenue)}
@@ -127,29 +141,75 @@ export default function SummaryScreen({ history, dispatch }: Props) {
         </div>
       </div>
 
+      <div className="method-filter">
+        <button
+          className={'filter-tab' + (filter === 'all' ? ' active' : '')}
+          onClick={() => setFilter('all')}
+        >
+          {t('allProducts')}
+        </button>
+        <button
+          className={'filter-tab' + (filter === 'cash' ? ' active' : '')}
+          onClick={() => setFilter('cash')}
+        >
+          <CashIcon size={16} /> {t('payCash')}
+        </button>
+        <button
+          className={'filter-tab' + (filter === 'card' ? ' active' : '')}
+          onClick={() => setFilter('card')}
+        >
+          <CardIcon size={16} /> {t('payCard')}
+        </button>
+      </div>
+
       {orders.length === 0 ? (
         <div className="empty">{t('noOrdersDay')}</div>
       ) : (
-        orders.map((o) => (
-          <div className="history-row" key={o.id}>
-            <span className="time">
-              {new Date(o.paidAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
-            </span>
-            <span className="table">{o.tableName}</span>
-            <span className="items">{o.items.map((i) => `${i.qty}× ${i.name}`).join(', ')}</span>
-            <span
-              className={'pay-badge' + (o.method ? ' ' + o.method : '')}
-              title={o.method ? t(o.method === 'cash' ? 'paidCash' : 'paidCard') : undefined}
-            >
-              {o.method === 'cash' ? (
-                <CashIcon size={16} />
-              ) : o.method === 'card' ? (
-                <CardIcon size={16} />
-              ) : null}
-            </span>
-            <span className="total">{fmtEur(o.total)}</span>
-          </div>
-        ))
+        orders.map((o) => {
+          const isOpen = expanded.has(o.id)
+          return (
+            <div className={'history-item' + (isOpen ? ' open' : '')} key={o.id}>
+              <div className="history-row" onClick={() => toggleExpanded(o.id)}>
+                <span className="time">
+                  {new Date(o.paidAt).toLocaleTimeString(locale, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+                <span className="table">{o.tableName}</span>
+                <span className="items">
+                  {o.items.map((i) => `${i.qty}× ${i.name}`).join(', ')}
+                </span>
+                <span
+                  className={'pay-badge' + (o.method ? ' ' + o.method : '')}
+                  title={o.method ? t(o.method === 'cash' ? 'paidCash' : 'paidCard') : undefined}
+                >
+                  {o.method === 'cash' ? (
+                    <CashIcon size={16} />
+                  ) : o.method === 'card' ? (
+                    <CardIcon size={16} />
+                  ) : null}
+                </span>
+                <span className="total">{fmtEur(o.total)}</span>
+                <span className="row-chev" aria-hidden="true">
+                  ›
+                </span>
+              </div>
+              {isOpen && (
+                <div className="history-detail">
+                  {o.items.map((i) => (
+                    <div className="detail-line" key={i.productId}>
+                      <span className="dl-qty">{i.qty}×</span>
+                      <span className="dl-name">{i.name}</span>
+                      <span className="dl-unit">{fmtEur(i.price)}</span>
+                      <span className="dl-price">{fmtEur(i.price * i.qty)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })
       )}
 
       {pinOpen && (

@@ -10,23 +10,34 @@ interface Props {
   onClose: () => void
 }
 
-/** Euro banknotes up to 100 — tapping one adds it to the running total. */
-const NOTES = [5, 10, 20, 50, 100]
+/** Denominations as quick-add buttons, laid out in two columns (euro values). */
+const NOTES = [100, 50, 20, 10, 5, 2] // notes + 2 € coin
+const COINS = [1, 0.5, 0.2, 0.1, 0.05] // 1 € coin + cents
+
+function labelFor(v: number): string {
+  return v >= 1 ? `${v} €` : `${Math.round(v * 100)} c`
+}
 
 /**
- * Cash payment: the staff taps the banknotes the customer handed over (each
- * tap adds up) and the modal shows the change to give back. Entering nothing
- * is fine — Confirm still finalises the payment.
+ * Cash payment. The staff can type the amount the customer handed over, or
+ * tap denomination buttons (each tap adds up). The change to give is shown
+ * live. Confirming with nothing entered still finalises the payment.
  */
 export default function CashModal({ total, onConfirm, onClose }: Props) {
   const t = useT()
-  const [given, setGiven] = useState(0)
+  const [given, setGiven] = useState('')
 
-  const hasInput = given > 0
-  const diff = given - total
+  const num = parseFloat(given.replace(',', '.'))
+  const hasInput = given.trim() !== '' && isFinite(num) && num > 0
+  const givenNum = isFinite(num) ? num : 0
+  const diff = givenNum - total
   const short = hasInput && diff < 0
 
-  const add = (n: number) => setGiven((g) => Math.round((g + n) * 100) / 100)
+  const add = (v: number) => {
+    const cur = parseFloat(given.replace(',', '.'))
+    const base = isFinite(cur) ? cur : 0
+    setGiven((Math.round((base + v) * 100) / 100).toFixed(2))
+  }
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -36,22 +47,39 @@ export default function CashModal({ total, onConfirm, onClose }: Props) {
           <strong>{fmtEur(total)}</strong>
         </div>
 
-        <div className="cash-given">
-          <span className="cash-given-label">{t('customerGave')}</span>
-          <span className="cash-given-value">{hasInput ? fmtEur(given) : '—'}</span>
-          {hasInput && (
-            <button className="cash-clear" onClick={() => setGiven(0)}>
-              {t('clearAmount')}
-            </button>
-          )}
+        <div className="field">
+          <label>{t('customerGave')}</label>
+          <div className="cash-input-row">
+            <input
+              className="cash-input"
+              value={given}
+              inputMode="decimal"
+              placeholder="0.00"
+              onChange={(e) => setGiven(e.target.value)}
+            />
+            {given !== '' && (
+              <button className="cash-clear" onClick={() => setGiven('')}>
+                {t('clearAmount')}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="cash-notes">
-          {NOTES.map((n) => (
-            <button key={n} className="cash-note" onClick={() => add(n)}>
-              {n} €
-            </button>
-          ))}
+          <div className="cash-col">
+            {NOTES.map((v) => (
+              <button key={v} className="cash-note" onClick={() => add(v)}>
+                {labelFor(v)}
+              </button>
+            ))}
+          </div>
+          <div className="cash-col">
+            {COINS.map((v) => (
+              <button key={v} className="cash-note coin" onClick={() => add(v)}>
+                {labelFor(v)}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className={'cash-change' + (short ? ' short' : '')}>
