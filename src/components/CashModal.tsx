@@ -14,7 +14,7 @@ interface Props {
 const DENOMS = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50]
 
 function labelFor(v: number): string {
-  return v >= 1 ? `${v} €` : `${Math.round(v * 100)} c`
+  return v >= 1 ? `${v} €` : `${v.toFixed(2)} €`
 }
 
 /**
