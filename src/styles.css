@@ -1800,14 +1800,14 @@ button {
 
 .color-row {
   display: flex;
-  justify-content: center;
-  gap: 32px;
+  align-items: center;
+  gap: 20px;
 }
 
 .color-pick {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   font-size: 15px;
   color: var(--muted);
 }
@@ -1835,8 +1835,7 @@ button {
 }
 
 .color-reset {
-  display: block;
-  margin: 12px auto 0;
+  margin-left: auto;
 }
 
 /* ---------- Toast (undo after payment) ---------- */

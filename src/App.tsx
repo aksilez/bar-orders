@@ -247,18 +247,18 @@ export default function App() {
                     />
                     <span>{t('occupied')}</span>
                   </label>
+                  {(tableFree || tableOccupied) && (
+                    <button
+                      className="btn small color-reset"
+                      onClick={() => {
+                        setTableFree(null)
+                        setTableOccupied(null)
+                      }}
+                    >
+                      {t('resetColors')}
+                    </button>
+                  )}
                 </div>
-                {(tableFree || tableOccupied) && (
-                  <button
-                    className="btn small color-reset"
-                    onClick={() => {
-                      setTableFree(null)
-                      setTableOccupied(null)
-                    }}
-                  >
-                    {t('resetColors')}
-                  </button>
-                )}
               </div>
               <div className="field">
                 <label>{t('pinSection')}</label>
