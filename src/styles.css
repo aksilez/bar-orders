@@ -855,11 +855,6 @@ button {
   font-weight: 700;
 }
 
-.cash-note.coin {
-  background: var(--panel);
-  color: var(--muted);
-}
-
 .cash-note:active {
   transform: scale(0.96);
   background: var(--accent);
@@ -1280,17 +1275,37 @@ button {
   color: #fff;
 }
 
-.table-filter {
-  width: 100%;
-  min-height: 44px;
+.table-tabs {
+  display: flex;
+  gap: 8px;
   margin-bottom: 12px;
-  border-radius: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.table-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.table-tab {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 20px;
   background: var(--panel);
   border: 1px solid var(--border);
-  color: var(--text);
+  color: var(--muted);
   font-size: 15px;
   font-weight: 600;
-  padding: 0 14px;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.table-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .history-item {

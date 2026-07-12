@@ -173,18 +173,23 @@ export default function SummaryScreen({ history, dispatch }: Props) {
       </div>
 
       {tableNames.length > 1 && (
-        <select
-          className="table-filter"
-          value={tableFilter}
-          onChange={(e) => setTableFilter(e.target.value)}
-        >
-          <option value="">{t('allTables')}</option>
+        <div className="table-tabs">
+          <button
+            className={'table-tab' + (tableFilter === '' ? ' active' : '')}
+            onClick={() => setTableFilter('')}
+          >
+            {t('allTables')}
+          </button>
           {tableNames.map((name) => (
-            <option key={name} value={name}>
+            <button
+              key={name}
+              className={'table-tab' + (tableFilter === name ? ' active' : '')}
+              onClick={() => setTableFilter(name)}
+            >
               {name}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
       )}
 
       {orders.length === 0 ? (
