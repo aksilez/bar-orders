@@ -79,6 +79,8 @@ export interface PaidOrder {
   paidAt: number
   /** How it was paid. Optional — orders from before this feature have none. */
   method?: PaymentMethod
+  /** Cash tip kept on top of the total (change the customer left). */
+  tip?: number
 }
 
 export interface AppState {

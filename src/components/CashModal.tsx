@@ -6,7 +6,7 @@ import { CashIcon } from '../icons'
 interface Props {
   /** Amount that needs to be paid. */
   total: number
-  onConfirm: () => void
+  onConfirm: (tip: number) => void
   onClose: () => void
 }
 
@@ -25,12 +25,15 @@ function labelFor(v: number): string {
 export default function CashModal({ total, onConfirm, onClose }: Props) {
   const t = useT()
   const [given, setGiven] = useState('')
+  const [keepChange, setKeepChange] = useState(false)
 
   const num = parseFloat(given.replace(',', '.'))
   const hasInput = given.trim() !== '' && isFinite(num) && num > 0
   const givenNum = isFinite(num) ? num : 0
   const diff = givenNum - total
   const short = hasInput && diff < 0
+  const rawChange = hasInput && diff > 0 ? Math.round(diff * 100) / 100 : 0
+  const tip = keepChange ? rawChange : 0
 
   const add = (v: number) => {
     const cur = parseFloat(given.replace(',', '.'))
@@ -72,16 +75,34 @@ export default function CashModal({ total, onConfirm, onClose }: Props) {
           ))}
         </div>
 
-        <div className={'cash-change' + (short ? ' short' : '')}>
-          <span>{short ? t('amountShort') : t('changeDue')}</span>
-          <strong>{hasInput ? fmtEur(Math.abs(diff)) : '—'}</strong>
-        </div>
+        {keepChange ? (
+          <div className="cash-change tip">
+            <span>{t('tip')}</span>
+            <strong>{fmtEur(tip)}</strong>
+          </div>
+        ) : (
+          <div className={'cash-change' + (short ? ' short' : '')}>
+            <span>{short ? t('amountShort') : t('changeDue')}</span>
+            <strong>{hasInput ? fmtEur(Math.abs(diff)) : '—'}</strong>
+          </div>
+        )}
+
+        {rawChange > 0 &&
+          (keepChange ? (
+            <button className="cash-tip-btn undo" onClick={() => setKeepChange(false)}>
+              {t('tipUndo')}
+            </button>
+          ) : (
+            <button className="cash-tip-btn" onClick={() => setKeepChange(true)}>
+              <CashIcon size={16} /> {t('keepChangeTip', fmtEur(rawChange))}
+            </button>
+          ))}
 
         <div className="cash-actions">
           <button className="btn" onClick={onClose}>
             {t('cancel')}
           </button>
-          <button className="btn pay" disabled={short} onClick={onConfirm}>
+          <button className="btn pay" disabled={short} onClick={() => onConfirm(tip)}>
             <CashIcon size={18} /> {t('confirmPayment')}
           </button>
         </div>

@@ -133,10 +133,10 @@ export default function OrderScreen({
     else setCashFor(scope)
   }
 
-  function doPay(scope: PayScope, method: PaymentMethod) {
+  function doPay(scope: PayScope, method: PaymentMethod, tip = 0) {
     const paidId = uid()
     if (scope === 'all') {
-      dispatch({ type: 'markPaid', tableId: table.id, paidId, method })
+      dispatch({ type: 'markPaid', tableId: table.id, paidId, method, tip })
       onPaid({ paidId, tableName: table.name, total })
     } else {
       dispatch({
@@ -144,6 +144,7 @@ export default function OrderScreen({
         tableId: table.id,
         paidId,
         method,
+        tip,
         items: [...moveQty.entries()].map(([productId, qty]) => ({ productId, qty })),
       })
       onPaid({ paidId, tableName: table.name, total: selectedTotal })
@@ -374,7 +375,7 @@ export default function OrderScreen({
       {cashFor && (
         <CashModal
           total={cashFor === 'all' ? total : selectedTotal}
-          onConfirm={() => doPay(cashFor, 'cash')}
+          onConfirm={(tip) => doPay(cashFor, 'cash', tip)}
           onClose={() => setCashFor(null)}
         />
       )}

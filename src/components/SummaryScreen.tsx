@@ -68,6 +68,7 @@ export default function SummaryScreen({ history, dispatch }: Props) {
       (tableFilter === '' || o.tableName === tableFilter)
   )
   const revenue = orders.reduce((sum, o) => sum + o.total, 0)
+  const tipsTotal = orders.reduce((sum, o) => sum + (o.tip ?? 0), 0)
 
   function toggleExpanded(id: string) {
     setExpanded((prev) => {
@@ -148,6 +149,13 @@ export default function SummaryScreen({ history, dispatch }: Props) {
         <div className="stat-card">
           <div className="label">{t('paidOrders')}</div>
           <div className="value">{orders.length}</div>
+          {tipsTotal > 0 && (
+            <div className="stat-split">
+              <span className="tip-stat">
+                <CashIcon size={14} /> {t('tips')} {fmtEur(tipsTotal)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -230,6 +238,15 @@ export default function SummaryScreen({ history, dispatch }: Props) {
                       <span className="dl-price">{fmtEur(i.price * i.qty)}</span>
                     </div>
                   ))}
+                  {o.tip ? (
+                    <div className="detail-line tip-line">
+                      <span className="dl-qty" aria-hidden="true">
+                        <CashIcon size={14} />
+                      </span>
+                      <span className="dl-name">{t('tip')}</span>
+                      <span className="dl-price">{fmtEur(o.tip)}</span>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>

@@ -43,12 +43,13 @@ export type Action =
       toTableId: string
       items: { productId: string; qty: number }[]
     }
-  | { type: 'markPaid'; tableId: string; paidId: string; method: PaymentMethod }
+  | { type: 'markPaid'; tableId: string; paidId: string; method: PaymentMethod; tip?: number }
   | {
       type: 'payItems'
       tableId: string
       paidId: string
       method: PaymentMethod
+      tip?: number
       items: { productId: string; qty: number }[]
     }
   | { type: 'undoPaid'; paidId: string }
@@ -241,6 +242,7 @@ export function reducer(state: AppState, action: Action): AppState {
         total: orderTotal(table.order),
         paidAt: Date.now(),
         method: action.method,
+        tip: action.tip && action.tip > 0 ? action.tip : undefined,
       }
       return {
         ...state,
@@ -276,6 +278,7 @@ export function reducer(state: AppState, action: Action): AppState {
         total: orderTotal(paidItems),
         paidAt: Date.now(),
         method: action.method,
+        tip: action.tip && action.tip > 0 ? action.tip : undefined,
       }
       return {
         ...state,

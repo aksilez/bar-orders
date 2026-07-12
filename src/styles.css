@@ -891,6 +891,41 @@ button {
   color: #f05a5a;
 }
 
+.cash-change.tip {
+  background: rgba(150, 120, 240, 0.16);
+}
+
+.cash-change.tip span,
+.cash-change.tip strong {
+  color: #b7a4ec;
+}
+
+.cash-tip-btn {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 44px;
+  border-radius: 10px;
+  background: rgba(150, 120, 240, 0.14);
+  border: 1px solid rgba(150, 120, 240, 0.5);
+  color: #c3b3f0;
+  font-size: 15px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cash-tip-btn.undo {
+  background: none;
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.cash-tip-btn:active {
+  transform: scale(0.98);
+}
+
 .cash-actions {
   display: flex;
   gap: 10px;
@@ -1433,6 +1468,16 @@ button {
   min-width: 72px;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.detail-line.tip-line .dl-name,
+.detail-line.tip-line .dl-price,
+.detail-line.tip-line .dl-qty {
+  color: #b7a4ec;
+}
+
+.stat-split .tip-stat {
+  color: #b7a4ec;
 }
 
 .history-row .time {
