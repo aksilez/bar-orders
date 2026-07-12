@@ -3,7 +3,7 @@ import type { PaidOrder } from '../types'
 import { fmtEur } from '../types'
 import type { Action } from '../state'
 import { localeOf, useLang, useT } from '../i18n'
-import { TrashIcon } from '../icons'
+import { CardIcon, CashIcon, TrashIcon } from '../icons'
 import { getPin } from '../pin'
 import ConfirmButton from './ConfirmButton'
 import PinPad from './PinPad'
@@ -47,6 +47,12 @@ export default function SummaryScreen({ history, dispatch }: Props) {
     .filter((o) => o.paidAt >= start && o.paidAt < end)
     .sort((a, b) => b.paidAt - a.paidAt)
   const revenue = orders.reduce((sum, o) => sum + o.total, 0)
+  const cashRevenue = orders
+    .filter((o) => o.method === 'cash')
+    .reduce((sum, o) => sum + o.total, 0)
+  const cardRevenue = orders
+    .filter((o) => o.method === 'card')
+    .reduce((sum, o) => sum + o.total, 0)
 
   // Days that actually have orders — only these are tappable in the calendar.
   const daysWithOrders = useMemo(() => {
@@ -104,6 +110,16 @@ export default function SummaryScreen({ history, dispatch }: Props) {
         <div className="stat-card">
           <div className="label">{t('revenue')}</div>
           <div className="value">{fmtEur(revenue)}</div>
+          {revenue > 0 && (cashRevenue > 0 || cardRevenue > 0) && (
+            <div className="stat-split">
+              <span>
+                <CashIcon size={14} /> {fmtEur(cashRevenue)}
+              </span>
+              <span>
+                <CardIcon size={14} /> {fmtEur(cardRevenue)}
+              </span>
+            </div>
+          )}
         </div>
         <div className="stat-card">
           <div className="label">{t('paidOrders')}</div>
@@ -121,6 +137,11 @@ export default function SummaryScreen({ history, dispatch }: Props) {
             </span>
             <span className="table">{o.tableName}</span>
             <span className="items">{o.items.map((i) => `${i.qty}× ${i.name}`).join(', ')}</span>
+            {o.method && (
+              <span className={'pay-badge ' + o.method} title={t(o.method === 'cash' ? 'paidCash' : 'paidCard')}>
+                {o.method === 'cash' ? <CashIcon size={14} /> : <CardIcon size={14} />}
+              </span>
+            )}
             <span className="total">{fmtEur(o.total)}</span>
           </div>
         ))

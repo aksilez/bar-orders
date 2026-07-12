@@ -71,6 +71,8 @@ export interface Table {
   order: OrderItem[]
 }
 
+export type PaymentMethod = 'cash' | 'card'
+
 export interface PaidOrder {
   id: string
   tableId: string
@@ -78,6 +80,8 @@ export interface PaidOrder {
   items: OrderItem[]
   total: number
   paidAt: number
+  /** How it was paid. Optional — orders from before this feature have none. */
+  method?: PaymentMethod
 }
 
 export interface AppState {

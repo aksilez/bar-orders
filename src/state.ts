@@ -5,6 +5,7 @@ import type {
   FloorObject,
   OrderItem,
   PaidOrder,
+  PaymentMethod,
   Product,
   Table,
 } from './types'
@@ -42,11 +43,12 @@ export type Action =
       toTableId: string
       items: { productId: string; qty: number }[]
     }
-  | { type: 'markPaid'; tableId: string; paidId: string }
+  | { type: 'markPaid'; tableId: string; paidId: string; method: PaymentMethod }
   | {
       type: 'payItems'
       tableId: string
       paidId: string
+      method: PaymentMethod
       items: { productId: string; qty: number }[]
     }
   | { type: 'undoPaid'; paidId: string }
@@ -239,6 +241,7 @@ export function reducer(state: AppState, action: Action): AppState {
         items: table.order,
         total: orderTotal(table.order),
         paidAt: Date.now(),
+        method: action.method,
       }
       return {
         ...state,
@@ -273,6 +276,7 @@ export function reducer(state: AppState, action: Action): AppState {
         items: paidItems,
         total: orderTotal(paidItems),
         paidAt: Date.now(),
+        method: action.method,
       }
       return {
         ...state,

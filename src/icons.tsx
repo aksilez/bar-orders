@@ -81,6 +81,25 @@ export function PencilIcon(props: IconProps) {
   )
 }
 
+export function CashIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="2" y="6" width="20" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M6 10v4M18 10v4" />
+    </Svg>
+  )
+}
+
+export function CardIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
+    </Svg>
+  )
+}
+
 export function TrashIcon(props: IconProps) {
   return (
     <Svg {...props}>

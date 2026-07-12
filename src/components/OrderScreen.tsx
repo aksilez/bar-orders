@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
-import type { Category, OrderItem, Product, Table } from '../types'
+import type { Category, OrderItem, PaymentMethod, Product, Table } from '../types'
 import { fmtEur, orderTotal, sortProducts, uid } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
-import { SelectIcon } from '../icons'
+import { CardIcon, CashIcon, SelectIcon } from '../icons'
 import ConfirmButton from './ConfirmButton'
 import ScrollBox from './ScrollBox'
 import TablePickerModal from './TablePickerModal'
+import CashModal from './CashModal'
+
+/** Which pay flow is active — the whole tab or just the selected items. */
+type PayScope = 'all' | 'selected'
 
 export interface PaidInfo {
   paidId: string
@@ -42,22 +46,18 @@ export default function OrderScreen({
   const cats = categories.filter((c) => products.some((p) => p.category === c))
   const favorites = sortProducts(products.filter((p) => p.favorite))
   const [cat, setCat] = useState<Category>(ALL)
-  const [confirmPay, setConfirmPay] = useState(false)
   const [moveMode, setMoveMode] = useState(false)
   // productId -> quantity to move (0 = not present). Defaults to the full
   // quantity when a row is first selected — tap the stepper to move fewer.
   const [moveQty, setMoveQty] = useState<Map<string, number>>(new Map())
-  const [confirmPaySel, setConfirmPaySel] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  // Payment flow: first tap opens the cash/card choice; cash opens the modal.
+  const [payChoosing, setPayChoosing] = useState<PayScope | null>(null)
+  const [cashFor, setCashFor] = useState<PayScope | null>(null)
 
-  // Two-tap confirm for "Pay selected" — resets after 3 s, or if the selection changes.
+  // Reset the payment choice if the selection changes underneath it.
   useEffect(() => {
-    if (!confirmPaySel) return
-    const id = window.setTimeout(() => setConfirmPaySel(false), 3000)
-    return () => clearTimeout(id)
-  }, [confirmPaySel])
-  useEffect(() => {
-    setConfirmPaySel(false)
+    setPayChoosing(null)
   }, [moveQty])
 
   // Keep a valid tab selected if the lists change.
@@ -74,25 +74,7 @@ export default function OrderScreen({
         ? favorites
         : sortProducts(products.filter((p) => p.category === cat))
 
-  // Two-tap confirmation for "Mark as paid" — resets itself after 3 s.
-  useEffect(() => {
-    if (!confirmPay) return
-    const id = window.setTimeout(() => setConfirmPay(false), 3000)
-    return () => clearTimeout(id)
-  }, [confirmPay])
-
   const total = orderTotal(table.order)
-
-  function onPay() {
-    if (!confirmPay) {
-      setConfirmPay(true)
-      return
-    }
-    const paidId = uid()
-    dispatch({ type: 'markPaid', tableId: table.id, paidId })
-    onPaid({ paidId, tableName: table.name, total })
-    onClose()
-  }
 
   function startMove() {
     setMoveMode(true)
@@ -151,24 +133,62 @@ export default function OrderScreen({
     onClose()
   }
 
-  function paySelected() {
-    if (!confirmPaySel) {
-      setConfirmPaySel(true)
-      return
-    }
+  // Card is instant; cash opens the change calculator first.
+  function chooseMethod(scope: PayScope, method: PaymentMethod) {
+    setPayChoosing(null)
+    if (method === 'card') doPay(scope, 'card')
+    else setCashFor(scope)
+  }
+
+  function doPay(scope: PayScope, method: PaymentMethod) {
     const paidId = uid()
-    dispatch({
-      type: 'payItems',
-      tableId: table.id,
-      paidId,
-      items: [...moveQty.entries()].map(([productId, qty]) => ({ productId, qty })),
-    })
-    onPaid({ paidId, tableName: table.name, total: selectedTotal })
-    cancelMove()
+    if (scope === 'all') {
+      dispatch({ type: 'markPaid', tableId: table.id, paidId, method })
+      onPaid({ paidId, tableName: table.name, total })
+    } else {
+      dispatch({
+        type: 'payItems',
+        tableId: table.id,
+        paidId,
+        method,
+        items: [...moveQty.entries()].map(([productId, qty]) => ({ productId, qty })),
+      })
+      onPaid({ paidId, tableName: table.name, total: selectedTotal })
+      cancelMove()
+    }
+    setCashFor(null)
     onClose()
   }
 
   const otherTables = allTables.filter((tb) => tb.id !== table.id)
+
+  // Idle pay button, or — once tapped — a Cash / Card split.
+  function payControls(scope: PayScope, idleLabel: string, disabled: boolean) {
+    if (payChoosing === scope) {
+      return (
+        <div className="pay-split">
+          <button className="btn pay-x" aria-label={t('cancel')} onClick={() => setPayChoosing(null)}>
+            ✕
+          </button>
+          <button className="btn pay-cash" onClick={() => chooseMethod(scope, 'cash')}>
+            <CashIcon size={18} /> {t('payCash')}
+          </button>
+          <button className="btn pay-card" onClick={() => chooseMethod(scope, 'card')}>
+            <CardIcon size={18} /> {t('payCard')}
+          </button>
+        </div>
+      )
+    }
+    return (
+      <button
+        className="btn pay"
+        disabled={disabled}
+        onClick={() => setPayChoosing(scope)}
+      >
+        {idleLabel}
+      </button>
+    )
+  }
 
   return (
     <div className="order-screen">
@@ -299,13 +319,11 @@ export default function OrderScreen({
               >
                 {t('moveSelected', String(totalSelectedUnits))}
               </button>
-              <button
-                className={'btn pay' + (confirmPaySel ? ' confirm' : '')}
-                disabled={totalSelectedUnits === 0}
-                onClick={paySelected}
-              >
-                {confirmPaySel ? t('tapAgainPay') : t('paySelected', fmtEur(selectedTotal))}
-              </button>
+              {payControls(
+                'selected',
+                t('paySelected', fmtEur(selectedTotal)),
+                totalSelectedUnits === 0
+              )}
             </footer>
           ) : (
             <footer className="order-footer">
@@ -313,13 +331,7 @@ export default function OrderScreen({
                 <span>{t('total')}</span>
                 <strong>{fmtEur(total)}</strong>
               </div>
-              <button
-                className={'btn pay' + (confirmPay ? ' confirm' : '')}
-                disabled={table.order.length === 0}
-                onClick={onPay}
-              >
-                {confirmPay ? t('tapAgainPay') : t('markPaid')}
-              </button>
+              {payControls('all', t('markPaid'), table.order.length === 0)}
             </footer>
           )}
         </section>
@@ -373,6 +385,14 @@ export default function OrderScreen({
           tables={otherTables}
           onPick={onPickDestination}
           onClose={() => setPickerOpen(false)}
+        />
+      )}
+
+      {cashFor && (
+        <CashModal
+          total={cashFor === 'all' ? total : selectedTotal}
+          onConfirm={() => doPay(cashFor, 'cash')}
+          onClose={() => setCashFor(null)}
         />
       )}
     </div>
