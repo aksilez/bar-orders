@@ -38,7 +38,7 @@ export default function SummaryScreen({ history, dispatch }: Props) {
   const [offset, setOffset] = useState(0)
   const [pinOpen, setPinOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [pickedDay, setPickedDay] = useState('')
+  const [pickedDays, setPickedDays] = useState<string[]>([])
 
   const { start, end, date } = dayBounds(offset)
   const locale = localeOf(lang)
@@ -92,7 +92,7 @@ export default function SummaryScreen({ history, dispatch }: Props) {
           aria-label={t('deleteHistory')}
           disabled={history.length === 0}
           onClick={() => {
-            setPickedDay('')
+            setPickedDays([])
             setPinOpen(true)
           }}
         >
@@ -152,17 +152,27 @@ export default function SummaryScreen({ history, dispatch }: Props) {
               <label>{t('pickDay')}</label>
               <CalendarPicker
                 daysWithOrders={daysWithOrders}
-                selected={pickedDay}
-                onSelect={setPickedDay}
+                selected={pickedDays}
+                onToggle={(iso) =>
+                  setPickedDays((prev) =>
+                    prev.includes(iso) ? prev.filter((d) => d !== iso) : [...prev, iso]
+                  )
+                }
                 locale={locale}
               />
             </div>
             <ConfirmButton
-              label={t('deletePickedDay')}
-              disabled={!pickedDay}
+              label={
+                pickedDays.length > 1
+                  ? t('deletePickedDays', String(pickedDays.length))
+                  : t('deletePickedDay')
+              }
+              disabled={pickedDays.length === 0}
               onConfirm={() => {
-                const b = isoDayBounds(pickedDay)
-                dispatch({ type: 'deleteHistoryRange', start: b.start, end: b.end })
+                for (const iso of pickedDays) {
+                  const b = isoDayBounds(iso)
+                  dispatch({ type: 'deleteHistoryRange', start: b.start, end: b.end })
+                }
                 setDeleteOpen(false)
               }}
             />
@@ -189,12 +199,12 @@ export default function SummaryScreen({ history, dispatch }: Props) {
 function CalendarPicker({
   daysWithOrders,
   selected,
-  onSelect,
+  onToggle,
   locale,
 }: {
   daysWithOrders: Map<string, number>
-  selected: string
-  onSelect: (iso: string) => void
+  selected: string[]
+  onToggle: (iso: string) => void
   locale: string
 }) {
   const now = new Date()
@@ -279,10 +289,12 @@ function CalendarPicker({
             <button
               key={iso}
               className={
-                'cal-day' + (hasOrders ? ' has-orders' : '') + (iso === selected ? ' selected' : '')
+                'cal-day' +
+                (hasOrders ? ' has-orders' : '') +
+                (selected.includes(iso) ? ' selected' : '')
               }
               disabled={!hasOrders}
-              onClick={() => onSelect(iso === selected ? '' : iso)}
+              onClick={() => onToggle(iso)}
             >
               {day}
             </button>
