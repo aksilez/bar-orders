@@ -74,7 +74,7 @@ export default function CardModal({ total, onConfirm, onClose }: Props) {
           ))}
         </div>
 
-        <div className="cash-change tip">
+        <div className="cash-change">
           <span>{t('totalCharged')}</span>
           <strong>{fmtEur(total + tipNum)}</strong>
         </div>

@@ -865,7 +865,7 @@ button {
 .cash-change {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   background: rgba(52, 199, 123, 0.14);
   border-radius: 12px;
   padding: 12px 16px;
@@ -1667,8 +1667,13 @@ button {
   z-index: 20;
   background: rgba(0, 0, 0, 0.55);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  /* Scrollable + top-aligned so the on-screen keyboard never hides the
+     modal's buttons — the user can scroll the sheet up to reach Save. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 5vh 12px 12px;
   animation: overlay-fade-in 0.15s ease;
 }
 
