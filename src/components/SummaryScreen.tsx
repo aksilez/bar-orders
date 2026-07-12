@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import type { PaidOrder } from '../types'
 import { fmtEur } from '../types'
 import type { Action } from '../state'
@@ -151,44 +151,39 @@ export default function SummaryScreen({ history, dispatch }: Props) {
         </div>
       </div>
 
-      <div className="method-filter">
-        <button
-          className={'filter-tab' + (filter === 'all' ? ' active' : '')}
-          onClick={() => setFilter('all')}
-        >
-          {t('allProducts')}
-        </button>
-        <button
-          className={'filter-tab' + (filter === 'cash' ? ' active' : '')}
-          onClick={() => setFilter('cash')}
-        >
-          <CashIcon size={16} /> {t('payCash')}
-        </button>
-        <button
-          className={'filter-tab' + (filter === 'card' ? ' active' : '')}
-          onClick={() => setFilter('card')}
-        >
-          <CardIcon size={16} /> {t('payCard')}
-        </button>
-      </div>
-
-      {tableNames.length > 1 && (
-        <div className="table-tabs">
-          <button
-            className={'table-tab' + (tableFilter === '' ? ' active' : '')}
-            onClick={() => setTableFilter('')}
-          >
-            {t('allTables')}
-          </button>
-          {tableNames.map((name) => (
-            <button
-              key={name}
-              className={'table-tab' + (tableFilter === name ? ' active' : '')}
-              onClick={() => setTableFilter(name)}
-            >
-              {name}
-            </button>
-          ))}
+      {dayOrders.length > 0 && (
+        <div className="filter-row">
+          <FilterDropdown
+            value={tableFilter}
+            onChange={setTableFilter}
+            options={[
+              { value: '', label: t('allTables') },
+              ...tableNames.map((name) => ({ value: name, label: name })),
+            ]}
+          />
+          <FilterDropdown
+            value={filter}
+            onChange={(v) => setFilter(v as 'all' | 'cash' | 'card')}
+            options={[
+              { value: 'all', label: t('allMethods') },
+              {
+                value: 'cash',
+                label: (
+                  <>
+                    <CashIcon size={16} /> {t('payCash')}
+                  </>
+                ),
+              },
+              {
+                value: 'card',
+                label: (
+                  <>
+                    <CardIcon size={16} /> {t('payCard')}
+                  </>
+                ),
+              },
+            ]}
+          />
         </div>
       )}
 
@@ -307,6 +302,55 @@ export default function SummaryScreen({ history, dispatch }: Props) {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+interface Option {
+  value: string
+  label: ReactNode
+}
+
+/** Compact styled dropdown used for the Summary filters (table / method). */
+function FilterDropdown({
+  value,
+  options,
+  onChange,
+}: {
+  value: string
+  options: Option[]
+  onChange: (value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const current = options.find((o) => o.value === value) ?? options[0]
+
+  return (
+    <div className="fdrop">
+      <button className="fdrop-btn" onClick={() => setOpen((o) => !o)}>
+        <span className="fdrop-label">{current.label}</span>
+        <span className={'fdrop-chev' + (open ? ' open' : '')} aria-hidden="true">
+          ›
+        </span>
+      </button>
+      {open && (
+        <>
+          <div className="fdrop-backdrop" onClick={() => setOpen(false)} />
+          <div className="fdrop-menu">
+            {options.map((o) => (
+              <button
+                key={o.value}
+                className={'fdrop-item' + (o.value === value ? ' active' : '')}
+                onClick={() => {
+                  onChange(o.value)
+                  setOpen(false)
+                }}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
