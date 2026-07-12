@@ -55,6 +55,9 @@ export default function CardModal({ total, onConfirm, onClose }: Props) {
               placeholder="0.00"
               onChange={(e) => setTip(e.target.value)}
             />
+            <button className="cash-tip-quick" onClick={roundUp}>
+              {t('roundUp')}
+            </button>
             {tip !== '' && (
               <button className="cash-clear" onClick={() => setTip('')}>
                 {t('clearAmount')}
@@ -69,9 +72,6 @@ export default function CardModal({ total, onConfirm, onClose }: Props) {
               +{fmtEur(v)}
             </button>
           ))}
-          <button className="cash-note" onClick={roundUp}>
-            {t('roundUp')}
-          </button>
         </div>
 
         <div className="cash-change tip">
