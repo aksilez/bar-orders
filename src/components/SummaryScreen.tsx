@@ -40,6 +40,7 @@ export default function SummaryScreen({ history, dispatch }: Props) {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [pickedDays, setPickedDays] = useState<string[]>([])
   const [filter, setFilter] = useState<'all' | 'cash' | 'card'>('all')
+  const [tableFilter, setTableFilter] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const { start, end, date } = dayBounds(offset)
@@ -55,8 +56,17 @@ export default function SummaryScreen({ history, dispatch }: Props) {
     .filter((o) => o.method === 'card')
     .reduce((sum, o) => sum + o.total, 0)
 
-  // The method filter narrows the visible list and the stat cards.
-  const orders = filter === 'all' ? dayOrders : dayOrders.filter((o) => o.method === filter)
+  // Distinct table names present today, for the table filter dropdown.
+  const tableNames = [...new Set(dayOrders.map((o) => o.tableName))].sort((a, b) =>
+    a.localeCompare(b)
+  )
+
+  // The method and table filters narrow the visible list and the stat cards.
+  const orders = dayOrders.filter(
+    (o) =>
+      (filter === 'all' || o.method === filter) &&
+      (tableFilter === '' || o.tableName === tableFilter)
+  )
   const revenue = orders.reduce((sum, o) => sum + o.total, 0)
 
   function toggleExpanded(id: string) {
@@ -124,7 +134,7 @@ export default function SummaryScreen({ history, dispatch }: Props) {
         <div className="stat-card">
           <div className="label">{t('revenue')}</div>
           <div className="value">{fmtEur(revenue)}</div>
-          {filter === 'all' && revenue > 0 && (cashRevenue > 0 || cardRevenue > 0) && (
+          {filter === 'all' && tableFilter === '' && revenue > 0 && (cashRevenue > 0 || cardRevenue > 0) && (
             <div className="stat-split">
               <span>
                 <CashIcon size={14} /> {fmtEur(cashRevenue)}
@@ -161,6 +171,21 @@ export default function SummaryScreen({ history, dispatch }: Props) {
           <CardIcon size={16} /> {t('payCard')}
         </button>
       </div>
+
+      {tableNames.length > 1 && (
+        <select
+          className="table-filter"
+          value={tableFilter}
+          onChange={(e) => setTableFilter(e.target.value)}
+        >
+          <option value="">{t('allTables')}</option>
+          {tableNames.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      )}
 
       {orders.length === 0 ? (
         <div className="empty">{t('noOrdersDay')}</div>

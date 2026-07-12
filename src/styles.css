@@ -840,15 +840,9 @@ button {
 
 .cash-notes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
   margin: 12px 0;
-}
-
-.cash-col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .cash-note {
@@ -1284,6 +1278,19 @@ button {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+
+.table-filter {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 0 14px;
 }
 
 .history-item {

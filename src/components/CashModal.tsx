@@ -10,9 +10,8 @@ interface Props {
   onClose: () => void
 }
 
-/** Denominations as quick-add buttons, laid out in two columns (euro values). */
-const NOTES = [100, 50, 20, 10, 5, 2] // notes + 2 € coin
-const COINS = [1, 0.5, 0.2, 0.1, 0.05] // 1 € coin + cents
+/** Denominations as quick-add buttons (euro values), largest first. */
+const DENOMS = [50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05]
 
 function labelFor(v: number): string {
   return v >= 1 ? `${v} €` : `${Math.round(v * 100)} c`
@@ -66,20 +65,11 @@ export default function CashModal({ total, onConfirm, onClose }: Props) {
         </div>
 
         <div className="cash-notes">
-          <div className="cash-col">
-            {NOTES.map((v) => (
-              <button key={v} className="cash-note" onClick={() => add(v)}>
-                {labelFor(v)}
-              </button>
-            ))}
-          </div>
-          <div className="cash-col">
-            {COINS.map((v) => (
-              <button key={v} className="cash-note coin" onClick={() => add(v)}>
-                {labelFor(v)}
-              </button>
-            ))}
-          </div>
+          {DENOMS.map((v) => (
+            <button key={v} className={'cash-note' + (v < 1 ? ' coin' : '')} onClick={() => add(v)}>
+              {labelFor(v)}
+            </button>
+          ))}
         </div>
 
         <div className={'cash-change' + (short ? ' short' : '')}>
