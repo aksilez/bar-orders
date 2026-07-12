@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Category, Product } from '../types'
 import { fmtEur, sortProducts } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
-import { TrashIcon } from '../icons'
+import { GripIcon, TrashIcon } from '../icons'
 import ConfirmButton from './ConfirmButton'
 
 interface Props {
@@ -286,7 +286,7 @@ function EditCategoryModal({
   )
 }
 
-/** Reorder (↑/↓), rename, delete and add categories in one place. */
+/** Drag-to-reorder, rename, delete and add categories in one place. */
 function CategoryEditor({
   categories,
   products,
@@ -300,6 +300,8 @@ function CategoryEditor({
 }) {
   const t = useT()
   const [newName, setNewName] = useState('')
+  const [dragCat, setDragCat] = useState<string | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   function add() {
     const name = newName.trim()
@@ -307,22 +309,58 @@ function CategoryEditor({
     setNewName('')
   }
 
+  function startDrag(cat: string, e: React.PointerEvent) {
+    e.preventDefault()
+    setDragCat(cat)
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  }
+
+  // While dragging, step the held category one slot toward the pointer.
+  function onPointerMove(e: React.PointerEvent) {
+    if (!dragCat || !listRef.current) return
+    const rows = [...listRef.current.querySelectorAll<HTMLElement>('.cat-edit-row')]
+    const idx = categories.indexOf(dragCat)
+    if (idx < 0) return
+    const y = e.clientY
+    const below = rows[idx + 1]?.getBoundingClientRect()
+    const above = rows[idx - 1]?.getBoundingClientRect()
+    if (below && y > below.top + below.height / 2) {
+      dispatch({ type: 'moveCategory', name: dragCat, dir: 1 })
+    } else if (above && y < above.top + above.height / 2) {
+      dispatch({ type: 'moveCategory', name: dragCat, dir: -1 })
+    }
+  }
+
+  function endDrag(e: React.PointerEvent) {
+    setDragCat(null)
+    try {
+      ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    } catch {
+      /* pointer already released */
+    }
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>{t('editCategories')}</h3>
 
-        <div className="cat-edit-list">
+        <div
+          className="cat-edit-list"
+          ref={listRef}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+        >
           {categories.length === 0 ? (
             <div className="empty">{t('emptyCategory')}</div>
           ) : (
-            categories.map((cat, i) => (
+            categories.map((cat) => (
               <CategoryRow
                 key={cat}
                 cat={cat}
                 count={products.filter((p) => p.category === cat).length}
-                isFirst={i === 0}
-                isLast={i === categories.length - 1}
+                dragging={dragCat === cat}
+                onGrip={(e) => startDrag(cat, e)}
                 dispatch={dispatch}
               />
             ))
@@ -338,18 +376,15 @@ function CategoryEditor({
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && add()}
             />
-            <button className="btn primary" disabled={!newName.trim()} onClick={add}>
+            <button className="btn primary cat-btn" disabled={!newName.trim()} onClick={add}>
               {t('add')}
             </button>
           </div>
         </div>
 
-        <div className="modal-actions">
-          <div className="spacer" />
-          <button className="btn" onClick={onClose}>
-            {t('close')}
-          </button>
-        </div>
+        <button className="btn cat-btn cat-close" onClick={onClose}>
+          {t('close')}
+        </button>
       </div>
     </div>
   )
@@ -358,14 +393,14 @@ function CategoryEditor({
 function CategoryRow({
   cat,
   count,
-  isFirst,
-  isLast,
+  dragging,
+  onGrip,
   dispatch,
 }: {
   cat: Category
   count: number
-  isFirst: boolean
-  isLast: boolean
+  dragging: boolean
+  onGrip: (e: React.PointerEvent) => void
   dispatch: React.Dispatch<Action>
 }) {
   const t = useT()
@@ -380,25 +415,14 @@ function CategoryRow({
   }
 
   return (
-    <div className="cat-edit-row">
-      <div className="cat-move">
-        <button
-          className="cat-move-btn"
-          disabled={isFirst}
-          aria-label={t('moveUp')}
-          onClick={() => dispatch({ type: 'moveCategory', name: cat, dir: -1 })}
-        >
-          ↑
-        </button>
-        <button
-          className="cat-move-btn"
-          disabled={isLast}
-          aria-label={t('moveDown')}
-          onClick={() => dispatch({ type: 'moveCategory', name: cat, dir: 1 })}
-        >
-          ↓
-        </button>
-      </div>
+    <div className={'cat-edit-row' + (dragging ? ' dragging' : '')}>
+      <span
+        className="cat-grip"
+        aria-label={t('dragToReorder')}
+        onPointerDown={onGrip}
+      >
+        <GripIcon size={22} />
+      </span>
       <input
         className="cat-edit-name"
         value={name}

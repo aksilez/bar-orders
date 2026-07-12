@@ -1162,33 +1162,32 @@ button {
 .cat-edit-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: var(--panel-2);
+  border: 1px solid transparent;
   border-radius: 12px;
-  padding: 6px 8px 6px 6px;
+  padding: 6px 8px 6px 4px;
 }
 
-.cat-move {
-  display: flex;
+.cat-edit-row.dragging {
+  border-color: var(--accent);
+  opacity: 0.9;
+}
+
+.cat-grip {
   flex-shrink: 0;
-}
-
-.cat-move-btn {
-  width: 38px;
+  width: 40px;
   height: 44px;
-  border: none;
-  background: none;
-  color: var(--text);
-  font-size: 20px;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
 }
 
-.cat-move-btn:disabled {
-  color: var(--border);
-}
-
-.cat-move-btn:active:not(:disabled) {
-  background: var(--panel);
+.cat-grip:active {
+  cursor: grabbing;
 }
 
 .cat-edit-name {
@@ -1249,6 +1248,16 @@ button {
 .cat-add-row input {
   flex: 1;
   min-width: 0;
+}
+
+.cat-btn {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.cat-close {
+  width: 100%;
+  margin-top: 12px;
 }
 
 
@@ -1957,8 +1966,9 @@ button {
   margin-bottom: 12px;
 }
 
-.chart-periods.sub {
-  margin-top: -4px;
+.chart-periods.year-by {
+  margin-top: 16px;
+  margin-bottom: 0;
 }
 
 .seg-btn {

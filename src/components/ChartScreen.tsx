@@ -201,23 +201,6 @@ export default function ChartScreen({ history }: Props) {
         </button>
       </div>
 
-      {period === 'year' && (
-        <div className="chart-periods sub">
-          <button
-            className={'seg-btn' + (yearBy === 'months' ? ' active' : '')}
-            onClick={() => setYearBy('months')}
-          >
-            {t('byMonths')}
-          </button>
-          <button
-            className={'seg-btn' + (yearBy === 'weeks' ? ' active' : '')}
-            onClick={() => setYearBy('weeks')}
-          >
-            {t('byWeeks')}
-          </button>
-        </div>
-      )}
-
       <div className="chart-readout">
         <div className="value">{fmtEur(selData ? valueOf(selData) : shownTotal)}</div>
         <div className="label">{selData ? buckets[sel!].full : title}</div>
@@ -317,6 +300,23 @@ export default function ChartScreen({ history }: Props) {
               <i className="dot tip" /> {t('tips')} {fmtEur(tipTotal)}
             </span>
           )}
+        </div>
+      )}
+
+      {period === 'year' && (
+        <div className="chart-periods year-by">
+          <button
+            className={'seg-btn' + (yearBy === 'months' ? ' active' : '')}
+            onClick={() => setYearBy('months')}
+          >
+            {t('byMonths')}
+          </button>
+          <button
+            className={'seg-btn' + (yearBy === 'weeks' ? ' active' : '')}
+            onClick={() => setYearBy('weeks')}
+          >
+            {t('byWeeks')}
+          </button>
         </div>
       )}
     </div>
