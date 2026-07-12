@@ -27,7 +27,7 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
   const [form, setForm] = useState<FormState | null>(null)
   const [catName, setCatName] = useState<string | null>(null)
   const [editingCat, setEditingCat] = useState<Category | null>(null)
-  const [selected, setSelected] = useState<Category>(categories[0] ?? '')
+  const [selected, setSelected] = useState<Category>(ALL)
 
   // Keep a valid category selected as the list changes.
   useEffect(() => {
@@ -89,6 +89,12 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
       <div className="menu-layout">
         <aside className="menu-sidebar">
           <button
+            className={'menu-cat all' + (isAll ? ' on' : '')}
+            onClick={() => setSelected(ALL)}
+          >
+            {t('allProducts')}
+          </button>
+          <button
             className={'menu-cat fav' + (isFav ? ' on' : '')}
             onClick={() => setSelected(FAV)}
           >
@@ -103,12 +109,6 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
               {cat}
             </button>
           ))}
-          <button
-            className={'menu-cat all' + (isAll ? ' on' : '')}
-            onClick={() => setSelected(ALL)}
-          >
-            {t('allProducts')}
-          </button>
           <button className="menu-cat add" onClick={() => setCatName('')}>
             + {t('addCategory').replace(/^\+\s*/, '')}
           </button>
@@ -132,10 +132,16 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
                   </button>
                 )}
                 <div className="spacer" />
-                {!virtual && (
+                {!isFav && categories.length > 0 && (
                   <button
                     className="btn primary"
-                    onClick={() => setForm({ name: '', price: '', category: selected })}
+                    onClick={() =>
+                      setForm({
+                        name: '',
+                        price: '',
+                        category: isAll ? categories[0] : selected,
+                      })
+                    }
                   >
                     {t('addProduct')}
                   </button>
