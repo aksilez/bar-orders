@@ -612,13 +612,6 @@ button {
   transform: scale(0.92);
 }
 
-/* Disabled stepper on unselected select-mode rows — dim and let taps pass
-   through to the row so tapping anywhere selects it. */
-.qty-btn:disabled {
-  opacity: 0.3;
-  pointer-events: none;
-}
-
 .qty {
   min-width: 32px;
   text-align: center;
@@ -644,12 +637,14 @@ button {
   font-size: 20px;
 }
 
-/* ---------- Move items between tables ---------- */
-
-.move-hint {
-  padding: 8px 12px 0;
-  text-align: center;
+/* Empty placeholder in select mode so the stepper + price line up exactly
+   with normal mode (where the ✕ button sits). */
+.remove-btn-spacer {
+  width: 48px;
+  flex-shrink: 0;
 }
+
+/* ---------- Move items between tables ---------- */
 
 /* Select mode keeps the full row look; tap to select → accent bar + tint. */
 .order-item.move-row {

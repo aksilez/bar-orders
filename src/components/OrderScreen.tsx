@@ -111,7 +111,9 @@ export default function OrderScreen({
   function adjustSelectedQty(item: OrderItem, delta: number) {
     setMoveQty((prev) => {
       const next = new Map(prev)
-      const current = next.get(item.productId) ?? 0
+      // an unselected row starts from its full quantity, so tapping − or +
+      // selects it (steppers stay active on every row, like normal mode)
+      const current = next.get(item.productId) ?? item.qty
       const clamped = Math.max(0, Math.min(current + delta, item.qty))
       if (clamped === 0) next.delete(item.productId)
       else next.set(item.productId, clamped)
@@ -167,11 +169,16 @@ export default function OrderScreen({
       <header className="order-header">
         <h2>{table.name}</h2>
         <div className="header-actions">
-          {!moveMode && table.order.length > 0 && (
-            <button className="btn" onClick={startMove}>
-              <SelectIcon size={18} /> {t('moveItems')}
-            </button>
-          )}
+          {table.order.length > 0 &&
+            (moveMode ? (
+              <button className="btn" onClick={cancelMove}>
+                {t('cancel')}
+              </button>
+            ) : (
+              <button className="btn" onClick={startMove}>
+                <SelectIcon size={18} /> {t('moveItems')}
+              </button>
+            ))}
           <button className="btn ok" onClick={onClose}>
             ✓ {t('confirm')}
           </button>
@@ -180,7 +187,6 @@ export default function OrderScreen({
 
       <div className="order-body">
         <section className="order-left">
-          {moveMode && <p className="hint move-hint">{t('moveHint')}</p>}
           <ScrollBox>
             {table.order.length === 0 ? (
               <div className="empty">{t('noItems')}</div>
@@ -203,7 +209,6 @@ export default function OrderScreen({
                     </div>
                     <button
                       className="qty-btn"
-                      disabled={!isSelected}
                       onClick={(e) => {
                         e.stopPropagation()
                         adjustSelectedQty(item, -1)
@@ -214,7 +219,6 @@ export default function OrderScreen({
                     <span className="qty">{shownQty}</span>
                     <button
                       className="qty-btn"
-                      disabled={!isSelected}
                       onClick={(e) => {
                         e.stopPropagation()
                         adjustSelectedQty(item, 1)
@@ -223,6 +227,7 @@ export default function OrderScreen({
                       +
                     </button>
                     <span className="line-total">{fmtEur(item.price * shownQty)}</span>
+                    <span className="remove-btn-spacer" aria-hidden="true" />
                   </div>
                 )
               })
@@ -282,24 +287,19 @@ export default function OrderScreen({
                 {fullySelected ? t('clearSelection') : t('selectAll')}
               </button>
               <button
+                className="btn primary"
+                disabled={totalSelectedUnits === 0}
+                onClick={() => setPickerOpen(true)}
+              >
+                {t('moveSelected', String(totalSelectedUnits))}
+              </button>
+              <button
                 className={'btn pay' + (confirmPaySel ? ' confirm' : '')}
                 disabled={totalSelectedUnits === 0}
                 onClick={paySelected}
               >
                 {confirmPaySel ? t('tapAgainPay') : t('paySelected', fmtEur(selectedTotal))}
               </button>
-              <div className="move-footer-actions">
-                <button className="btn" onClick={cancelMove}>
-                  {t('cancel')}
-                </button>
-                <button
-                  className="btn primary"
-                  disabled={totalSelectedUnits === 0}
-                  onClick={() => setPickerOpen(true)}
-                >
-                  {t('moveSelected', String(totalSelectedUnits))}
-                </button>
-              </div>
             </footer>
           ) : (
             <footer className="order-footer">
