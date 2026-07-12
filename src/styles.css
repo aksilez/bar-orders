@@ -612,6 +612,13 @@ button {
   transform: scale(0.92);
 }
 
+/* Disabled stepper on unselected select-mode rows — dim and let taps pass
+   through to the row so tapping anywhere selects it. */
+.qty-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 .qty {
   min-width: 32px;
   text-align: center;
@@ -644,7 +651,9 @@ button {
   text-align: center;
 }
 
+/* Select mode keeps the full row look; tap to select → accent bar + tint. */
 .order-item.move-row {
+  position: relative;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -654,56 +663,15 @@ button {
   background: linear-gradient(rgba(79, 142, 247, 0.12), rgba(79, 142, 247, 0.12)), var(--panel);
 }
 
-.move-check {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  border: 2px solid var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.move-check.on {
+.order-item.move-row.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 5px;
+  border-radius: 3px;
   background: var(--accent);
-  border-color: var(--accent);
-}
-
-/* Per-line quantity stepper — pick how many of a multi-unit item to move. */
-.move-stepper {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.move-step-btn {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--panel-2);
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1;
-  transition: transform 0.08s ease, filter 0.08s ease;
-}
-
-.move-step-btn:active {
-  filter: brightness(1.3);
-  transform: scale(0.92);
-}
-
-.move-step-val {
-  min-width: 22px;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 700;
 }
 
 .order-footer {

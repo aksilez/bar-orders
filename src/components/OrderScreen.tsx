@@ -188,34 +188,41 @@ export default function OrderScreen({
               table.order.map((item) => {
                 const sel = moveQty.get(item.productId) ?? 0
                 const isSelected = sel > 0
+                const shownQty = isSelected ? sel : item.qty
                 return (
                   <div
                     className={'order-item move-row' + (isSelected ? ' selected' : '')}
                     key={item.productId}
                     onClick={() => toggleSelect(item)}
                   >
-                    <span className={'move-check' + (isSelected ? ' on' : '')}>
-                      {isSelected && '✓'}
-                    </span>
                     <div className="item-info">
                       <span className="item-name">{item.name}</span>
                       <span className="item-unit">
-                        {item.qty} × {fmtEur(item.price)}
+                        {fmtEur(item.price)} {t('each')}
                       </span>
                     </div>
-                    {isSelected && item.qty > 1 ? (
-                      <div className="move-stepper" onClick={(e) => e.stopPropagation()}>
-                        <button className="move-step-btn" onClick={() => adjustSelectedQty(item, -1)}>
-                          −
-                        </button>
-                        <span className="move-step-val">{sel}</span>
-                        <button className="move-step-btn" onClick={() => adjustSelectedQty(item, 1)}>
-                          +
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="line-total">{fmtEur(item.price * item.qty)}</span>
-                    )}
+                    <button
+                      className="qty-btn"
+                      disabled={!isSelected}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        adjustSelectedQty(item, -1)
+                      }}
+                    >
+                      −
+                    </button>
+                    <span className="qty">{shownQty}</span>
+                    <button
+                      className="qty-btn"
+                      disabled={!isSelected}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        adjustSelectedQty(item, 1)
+                      }}
+                    >
+                      +
+                    </button>
+                    <span className="line-total">{fmtEur(item.price * shownQty)}</span>
                   </div>
                 )
               })
