@@ -34,8 +34,7 @@ export default function App() {
   const [openTableId, setOpenTableId] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [changePinOpen, setChangePinOpen] = useState(false)
-  // Overview + History are behind the PIN; unlocking one unlocks both for the session.
-  const [reportsUnlocked, setReportsUnlocked] = useState(false)
+  // Overview + History are behind the PIN — asked every time you switch to them.
   const [pendingScreen, setPendingScreen] = useState<Screen | null>(null)
   const [toast, setToast] = useState<PaidInfo | null>(null)
   const [theme, setTheme] = useState<Theme>(
@@ -43,6 +42,12 @@ export default function App() {
   )
   const [lang, setLang] = useState<Lang>(
     () => (localStorage.getItem('bar-orders-lang') as Lang | null) ?? 'en'
+  )
+  const [tableFree, setTableFree] = useState<string | null>(
+    () => localStorage.getItem('bar-orders-table-free')
+  )
+  const [tableOccupied, setTableOccupied] = useState<string | null>(
+    () => localStorage.getItem('bar-orders-table-occupied')
   )
 
   useEffect(() => {
@@ -64,6 +69,28 @@ export default function App() {
     localStorage.setItem('bar-orders-lang', lang)
   }, [lang])
 
+  useEffect(() => {
+    const root = document.documentElement
+    if (tableFree) {
+      root.style.setProperty('--table-free', tableFree)
+      localStorage.setItem('bar-orders-table-free', tableFree)
+    } else {
+      root.style.removeProperty('--table-free')
+      localStorage.removeItem('bar-orders-table-free')
+    }
+  }, [tableFree])
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (tableOccupied) {
+      root.style.setProperty('--table-occupied', tableOccupied)
+      localStorage.setItem('bar-orders-table-occupied', tableOccupied)
+    } else {
+      root.style.removeProperty('--table-occupied')
+      localStorage.removeItem('bar-orders-table-occupied')
+    }
+  }, [tableOccupied])
+
   // The undo toast disappears after 6 s.
   useEffect(() => {
     if (!toast) return
@@ -73,9 +100,9 @@ export default function App() {
 
   const t = tFor(lang)
 
-  // Navigate to a screen; Overview + History require the PIN first.
+  // Navigate to a screen; Overview + History require the PIN every time.
   function go(id: Screen) {
-    if ((id === 'chart' || id === 'summary') && !reportsUnlocked) {
+    if ((id === 'chart' || id === 'summary') && id !== screen) {
       setPendingScreen(id)
       return
     }
@@ -202,6 +229,38 @@ export default function App() {
                 </div>
               </div>
               <div className="field">
+                <label>{t('tableColors')}</label>
+                <div className="color-row">
+                  <label className="color-pick">
+                    <input
+                      type="color"
+                      value={tableFree ?? '#34c77b'}
+                      onChange={(e) => setTableFree(e.target.value)}
+                    />
+                    <span>{t('free')}</span>
+                  </label>
+                  <label className="color-pick">
+                    <input
+                      type="color"
+                      value={tableOccupied ?? '#f0a531'}
+                      onChange={(e) => setTableOccupied(e.target.value)}
+                    />
+                    <span>{t('occupied')}</span>
+                  </label>
+                  {(tableFree || tableOccupied) && (
+                    <button
+                      className="btn small"
+                      onClick={() => {
+                        setTableFree(null)
+                        setTableOccupied(null)
+                      }}
+                    >
+                      {t('resetColors')}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="field">
                 <label>{t('pinSection')}</label>
                 <button className="btn" onClick={() => setChangePinOpen(true)}>
                   {t('changePin')}
@@ -222,7 +281,6 @@ export default function App() {
         {pendingScreen && (
           <PinModal
             onSuccess={() => {
-              setReportsUnlocked(true)
               setScreen(pendingScreen)
               setEditMode(false)
               setPendingScreen(null)

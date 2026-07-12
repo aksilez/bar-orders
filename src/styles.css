@@ -13,6 +13,9 @@
   --tint-free: rgba(52, 199, 123, 0.1);
   --tint-active: rgba(240, 165, 49, 0.13);
   --green-text: #06220f;
+  /* Table colours — overridable in Settings (default to the status accents). */
+  --table-free: var(--green);
+  --table-occupied: var(--amber);
 }
 
 :root[data-theme='light'] {
@@ -278,13 +281,21 @@ button {
 }
 
 .table-card.free {
-  border-color: var(--green);
-  background: linear-gradient(var(--tint-free), var(--tint-free)), var(--panel);
+  border-color: var(--table-free);
+  background: linear-gradient(
+      color-mix(in srgb, var(--table-free) 12%, transparent),
+      color-mix(in srgb, var(--table-free) 12%, transparent)
+    ),
+    var(--panel);
 }
 
 .table-card.active {
-  border-color: var(--amber);
-  background: linear-gradient(var(--tint-active), var(--tint-active)), var(--panel);
+  border-color: var(--table-occupied);
+  background: linear-gradient(
+      color-mix(in srgb, var(--table-occupied) 14%, transparent),
+      color-mix(in srgb, var(--table-occupied) 14%, transparent)
+    ),
+    var(--panel);
 }
 
 .table-card.editing {
@@ -461,13 +472,13 @@ button {
 }
 
 .table-total {
-  color: var(--amber);
+  color: var(--table-occupied);
   font-weight: 800;
   font-size: 18px;
 }
 
 .table-free {
-  color: var(--green);
+  color: var(--table-free);
   font-weight: 600;
   font-size: 14px;
 }
@@ -1785,6 +1796,44 @@ button {
 
 .lang-row .btn {
   flex: 1;
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.color-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.color-pick input[type='color'] {
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.color-pick input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-pick input[type='color']::-webkit-color-swatch {
+  border: none;
+  border-radius: 7px;
+}
+
+.color-row .btn.small {
+  margin-left: auto;
 }
 
 /* ---------- Toast (undo after payment) ---------- */
