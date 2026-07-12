@@ -61,6 +61,7 @@ export type Action =
   | { type: 'deleteCategory'; name: string }
   | { type: 'moveCategory'; name: string; dir: -1 | 1 }
   | { type: 'deleteHistoryRange'; start: number; end: number }
+  | { type: 'deleteHistoryOrder'; id: string }
   | { type: 'deleteHistoryAll' }
 
 export function reducer(state: AppState, action: Action): AppState {
@@ -369,6 +370,9 @@ export function reducer(state: AppState, action: Action): AppState {
           (o) => o.paidAt < action.start || o.paidAt >= action.end
         ),
       }
+
+    case 'deleteHistoryOrder':
+      return { ...state, history: state.history.filter((o) => o.id !== action.id) }
 
     case 'deleteHistoryAll':
       return { ...state, history: [] }

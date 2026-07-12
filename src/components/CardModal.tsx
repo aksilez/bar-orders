@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { fmtEur } from '../types'
 import { useT } from '../i18n'
 import { CardIcon } from '../icons'
+import AmountPad from './AmountPad'
 
 interface Props {
   /** Amount that needs to be paid. */
@@ -24,6 +25,7 @@ function round2(v: number): number {
 export default function CardModal({ total, onConfirm, onClose }: Props) {
   const t = useT()
   const [tip, setTip] = useState('')
+  const [padOpen, setPadOpen] = useState(false)
 
   const tipNum = Math.max(0, isFinite(parseFloat(tip.replace(',', '.'))) ? parseFloat(tip.replace(',', '.')) : 0)
 
@@ -48,13 +50,9 @@ export default function CardModal({ total, onConfirm, onClose }: Props) {
         <div className="field">
           <label>{t('tip')}</label>
           <div className="cash-input-row">
-            <input
-              className="cash-input tip"
-              value={tip}
-              inputMode="decimal"
-              placeholder="0.00"
-              onChange={(e) => setTip(e.target.value)}
-            />
+            <button className="cash-input tip amount-field" onClick={() => setPadOpen(true)}>
+              {tip === '' ? <span className="ph">0.00</span> : tip}
+            </button>
             <button className="cash-tip-quick" onClick={roundUp}>
               {t('roundUp')}
             </button>
@@ -88,6 +86,18 @@ export default function CardModal({ total, onConfirm, onClose }: Props) {
           </button>
         </div>
       </div>
+
+      {padOpen && (
+        <AmountPad
+          title={t('tip')}
+          initial={tip}
+          onConfirm={(v) => {
+            setTip(v)
+            setPadOpen(false)
+          }}
+          onClose={() => setPadOpen(false)}
+        />
+      )}
     </div>
   )
 }

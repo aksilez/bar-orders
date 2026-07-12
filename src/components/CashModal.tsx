@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { fmtEur } from '../types'
 import { useT } from '../i18n'
 import { CashIcon } from '../icons'
+import AmountPad from './AmountPad'
 
 interface Props {
   /** Amount that needs to be paid. */
@@ -30,6 +31,7 @@ export default function CashModal({ total, onConfirm, onClose }: Props) {
   const t = useT()
   const [given, setGiven] = useState('')
   const [tip, setTip] = useState('')
+  const [pad, setPad] = useState<'given' | 'tip' | null>(null)
 
   const givenNum = parseFloat(given.replace(',', '.'))
   const hasGiven = given.trim() !== '' && isFinite(givenNum) && givenNum > 0
@@ -65,13 +67,9 @@ export default function CashModal({ total, onConfirm, onClose }: Props) {
         <div className="field">
           <label>{t('customerGave')}</label>
           <div className="cash-input-row">
-            <input
-              className="cash-input"
-              value={given}
-              inputMode="decimal"
-              placeholder="0.00"
-              onChange={(e) => setGiven(e.target.value)}
-            />
+            <button className="cash-input amount-field" onClick={() => setPad('given')}>
+              {given === '' ? <span className="ph">0.00</span> : given}
+            </button>
             {given !== '' && (
               <button className="cash-clear" onClick={() => setGiven('')}>
                 {t('clearAmount')}
@@ -91,13 +89,9 @@ export default function CashModal({ total, onConfirm, onClose }: Props) {
         <div className="field">
           <label>{t('tip')}</label>
           <div className="cash-input-row">
-            <input
-              className="cash-input tip"
-              value={tip}
-              inputMode="decimal"
-              placeholder="0.00"
-              onChange={(e) => setTip(e.target.value)}
-            />
+            <button className="cash-input tip amount-field" onClick={() => setPad('tip')}>
+              {tip === '' ? <span className="ph">0.00</span> : tip}
+            </button>
             <button className="cash-tip-quick" onClick={roundUp}>
               {t('roundUp')}
             </button>
@@ -121,6 +115,19 @@ export default function CashModal({ total, onConfirm, onClose }: Props) {
           </button>
         </div>
       </div>
+
+      {pad && (
+        <AmountPad
+          title={pad === 'given' ? t('customerGave') : t('tip')}
+          initial={pad === 'given' ? given : tip}
+          onConfirm={(v) => {
+            if (pad === 'given') setGiven(v)
+            else setTip(v)
+            setPad(null)
+          }}
+          onClose={() => setPad(null)}
+        />
+      )}
     </div>
   )
 }

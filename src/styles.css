@@ -828,6 +828,24 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* Tappable amount box that opens the in-app numpad instead of the keyboard. */
+.amount-field {
+  min-height: 52px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  color: var(--text);
+}
+
+.amount-field .ph {
+  color: var(--muted);
+  font-weight: 400;
+}
+
 .cash-clear {
   flex-shrink: 0;
   border: 1px solid var(--border);
@@ -1605,6 +1623,21 @@ button {
   color: #b7a4ec;
 }
 
+.detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.detail-del {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+}
+
 .history-row .time {
   color: var(--muted);
   width: 56px;
@@ -1877,6 +1910,32 @@ button {
 /* Cancel spans the full width of the pad, centered under it. */
 .pin-modal .modal-actions.pin-cancel {
   justify-content: center;
+}
+
+/* ---------- Amount keypad (payments) ---------- */
+
+.amount-pad {
+  width: min(340px, 92vw);
+  align-items: center;
+  z-index: 30;
+}
+
+.amount-display {
+  width: 100%;
+  min-height: 60px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 18px;
+  font-size: 30px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount-pad .cash-actions {
+  width: 100%;
 }
 
 .pin-cancel .btn {

@@ -4,9 +4,8 @@ import { fmtEur } from '../types'
 import type { Action } from '../state'
 import { localeOf, useLang, useT } from '../i18n'
 import { CardIcon, CashIcon, TrashIcon } from '../icons'
-import { getPin } from '../pin'
 import ConfirmButton from './ConfirmButton'
-import PinPad from './PinPad'
+import PinModal from './PinModal'
 
 interface Props {
   history: PaidOrder[]
@@ -247,6 +246,17 @@ export default function SummaryScreen({ history, dispatch }: Props) {
                       <span className="dl-price">{fmtEur(o.tip)}</span>
                     </div>
                   ) : null}
+                  <div className="detail-actions">
+                    <ConfirmButton
+                      className="btn danger detail-del"
+                      label={
+                        <>
+                          <TrashIcon size={16} /> {t('deleteOrder')}
+                        </>
+                      }
+                      onConfirm={() => dispatch({ type: 'deleteHistoryOrder', id: o.id })}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -482,39 +492,3 @@ function CalendarPicker({
   )
 }
 
-function PinModal({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) {
-  const t = useT()
-  const [wrong, setWrong] = useState(false)
-  const [resetKey, setResetKey] = useState(0)
-
-  function onComplete(pin: string) {
-    if (pin === getPin()) {
-      onSuccess()
-    } else {
-      setWrong(true)
-      window.setTimeout(() => {
-        setWrong(false)
-        setResetKey((k) => k + 1)
-      }, 700)
-    }
-  }
-
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal pin-modal" onClick={(e) => e.stopPropagation()}>
-        <PinPad
-          title={t('enterPin')}
-          hint={wrong ? t('wrongPin') : undefined}
-          wrong={wrong}
-          resetKey={resetKey}
-          onComplete={onComplete}
-        />
-        <div className="modal-actions pin-cancel">
-          <button className="btn" onClick={onClose}>
-            {t('cancel')}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}

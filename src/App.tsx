@@ -14,6 +14,7 @@ import MenuScreen from './components/MenuScreen'
 import SummaryScreen from './components/SummaryScreen'
 import ChartScreen from './components/ChartScreen'
 import ChangePinModal from './components/ChangePinModal'
+import PinModal from './components/PinModal'
 
 type Screen = 'indoor' | 'outdoor' | 'menu' | 'chart' | 'summary'
 type Theme = 'dark' | 'light'
@@ -33,6 +34,9 @@ export default function App() {
   const [openTableId, setOpenTableId] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [changePinOpen, setChangePinOpen] = useState(false)
+  // Overview + History are behind the PIN; unlocking one unlocks both for the session.
+  const [reportsUnlocked, setReportsUnlocked] = useState(false)
+  const [pendingScreen, setPendingScreen] = useState<Screen | null>(null)
   const [toast, setToast] = useState<PaidInfo | null>(null)
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem('bar-orders-theme') as Theme | null) ?? 'dark'
@@ -69,6 +73,16 @@ export default function App() {
 
   const t = tFor(lang)
 
+  // Navigate to a screen; Overview + History require the PIN first.
+  function go(id: Screen) {
+    if ((id === 'chart' || id === 'summary') && !reportsUnlocked) {
+      setPendingScreen(id)
+      return
+    }
+    setScreen(id)
+    if (id === 'menu' || id === 'summary' || id === 'chart') setEditMode(false)
+  }
+
   if (!state) return <div className="loading">{t('loading')}</div>
 
   const isFloor = screen === 'indoor' || screen === 'outdoor'
@@ -85,10 +99,7 @@ export default function App() {
               <button
                 key={id}
                 className={'tab' + (screen === id ? ' active' : '')}
-                onClick={() => {
-                  setScreen(id)
-                  if (id === 'menu' || id === 'summary' || id === 'chart') setEditMode(false)
-                }}
+                onClick={() => go(id)}
               >
                 {t(id)}
               </button>
@@ -207,6 +218,18 @@ export default function App() {
         )}
 
         {changePinOpen && <ChangePinModal onClose={() => setChangePinOpen(false)} />}
+
+        {pendingScreen && (
+          <PinModal
+            onSuccess={() => {
+              setReportsUnlocked(true)
+              setScreen(pendingScreen)
+              setEditMode(false)
+              setPendingScreen(null)
+            }}
+            onClose={() => setPendingScreen(null)}
+          />
+        )}
       </div>
     </I18nContext.Provider>
   )
