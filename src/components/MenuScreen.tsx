@@ -95,11 +95,10 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
             {t('allProducts')}
           </button>
           <button
-            className={'menu-cat fav' + (isFav ? ' on' : '')}
+            className={'menu-cat' + (isFav ? ' on' : '')}
             onClick={() => setSelected(FAV)}
           >
             {t('favorites')}
-            <span className="fav-ico">★</span>
           </button>
           {categories.map((cat) => (
             <button

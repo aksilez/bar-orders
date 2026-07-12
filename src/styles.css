@@ -936,15 +936,6 @@ button {
   margin-top: 4px;
 }
 
-.menu-cat.fav {
-  display: flex;
-  align-items: center;
-}
-
-.menu-cat.fav .fav-ico {
-  color: var(--amber);
-  margin-left: auto;
-}
 
 .menu-detail {
   flex: 1;
