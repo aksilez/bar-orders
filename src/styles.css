@@ -848,6 +848,13 @@ button {
   transition: transform 0.08s ease, background 0.1s ease;
 }
 
+.product-btn > span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
 .product-btn .price {
   color: var(--accent);
   font-weight: 700;
