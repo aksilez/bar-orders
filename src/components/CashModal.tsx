@@ -119,7 +119,6 @@ export default function CashModal({ total, onConfirm, onClose }: Props) {
       {pad && (
         <AmountPad
           title={pad === 'given' ? t('customerGave') : t('tip')}
-          initial={pad === 'given' ? given : tip}
           onConfirm={(v) => {
             if (pad === 'given') setGiven(v)
             else setTip(v)

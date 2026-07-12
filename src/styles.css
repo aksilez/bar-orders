@@ -1800,27 +1800,30 @@ button {
 
 .color-row {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  justify-content: center;
+  gap: 36px;
 }
 
 .color-pick {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 .color-pick input[type='color'] {
-  width: 44px;
-  height: 44px;
+  width: 56px;
+  height: 56px;
   min-height: 0;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
   background: none;
   -webkit-appearance: none;
   appearance: none;
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .color-pick input[type='color']::-webkit-color-swatch-wrapper {
@@ -1829,11 +1832,12 @@ button {
 
 .color-pick input[type='color']::-webkit-color-swatch {
   border: none;
-  border-radius: 7px;
+  border-radius: 14px;
 }
 
-.color-row .btn.small {
-  margin-left: auto;
+.color-reset {
+  display: block;
+  margin: 12px auto 0;
 }
 
 /* ---------- Toast (undo after payment) ---------- */

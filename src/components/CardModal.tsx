@@ -90,7 +90,6 @@ export default function CardModal({ total, onConfirm, onClose }: Props) {
       {padOpen && (
         <AmountPad
           title={t('tip')}
-          initial={tip}
           onConfirm={(v) => {
             setTip(v)
             setPadOpen(false)
