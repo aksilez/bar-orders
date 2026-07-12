@@ -137,11 +137,16 @@ export default function SummaryScreen({ history, dispatch }: Props) {
             </span>
             <span className="table">{o.tableName}</span>
             <span className="items">{o.items.map((i) => `${i.qty}× ${i.name}`).join(', ')}</span>
-            {o.method && (
-              <span className={'pay-badge ' + o.method} title={t(o.method === 'cash' ? 'paidCash' : 'paidCard')}>
-                {o.method === 'cash' ? <CashIcon size={14} /> : <CardIcon size={14} />}
-              </span>
-            )}
+            <span
+              className={'pay-badge' + (o.method ? ' ' + o.method : '')}
+              title={o.method ? t(o.method === 'cash' ? 'paidCash' : 'paidCard') : undefined}
+            >
+              {o.method === 'cash' ? (
+                <CashIcon size={16} />
+              ) : o.method === 'card' ? (
+                <CardIcon size={16} />
+              ) : null}
+            </span>
             <span className="total">{fmtEur(o.total)}</span>
           </div>
         ))

@@ -814,31 +814,61 @@ button {
   font-size: 26px;
 }
 
-.cash-input {
-  font-size: 24px !important;
-  text-align: center;
-  font-weight: 700;
-}
-
-.cash-chips {
+.cash-given {
   display: flex;
-  gap: 8px;
-  margin: 10px 0;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel-2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
 }
 
-.cash-chip {
+.cash-given-label {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.cash-given-value {
   flex: 1;
-  min-height: 46px;
+  text-align: right;
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.cash-clear {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.cash-notes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cash-note {
+  min-height: 52px;
   border-radius: 12px;
   background: var(--panel-2);
   border: 1px solid var(--border);
   color: var(--text);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
 }
 
-.cash-chip:active {
+.cash-note:active {
   transform: scale(0.96);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .cash-change {
@@ -904,6 +934,9 @@ button {
 .pay-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 24px;
+  flex-shrink: 0;
   color: var(--muted);
 }
 
@@ -1180,33 +1213,6 @@ button {
   text-align: center;
 }
 
-.star-btn {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  border: none;
-  background: none;
-  font-size: 24px;
-  color: var(--muted);
-  transition: transform 0.08s ease, color 0.15s ease;
-}
-
-.star-btn.on {
-  color: var(--amber);
-}
-
-.star-btn:active {
-  transform: scale(0.85);
-}
-
-.fav-star {
-  position: absolute;
-  top: 6px;
-  right: 10px;
-  color: var(--amber);
-  font-size: 15px;
-}
-
 /* ---------- Summary ---------- */
 
 .day-nav {
@@ -1290,6 +1296,9 @@ button {
   font-weight: 800;
   font-size: 18px;
   flex-shrink: 0;
+  min-width: 84px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Modals ---------- */

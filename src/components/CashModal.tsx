@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { fmtEur } from '../types'
 import { useT } from '../i18n'
 import { CashIcon } from '../icons'
@@ -10,28 +10,23 @@ interface Props {
   onClose: () => void
 }
 
-/** Quick-pick note values offered above the calculated change. */
-const NOTES = [5, 10, 20, 50]
+/** Euro banknotes up to 100 — tapping one adds it to the running total. */
+const NOTES = [5, 10, 20, 50, 100]
 
 /**
- * Cash payment: the staff types how much the customer handed over and the
- * modal shows the change to give back. Confirm finalises the payment.
+ * Cash payment: the staff taps the banknotes the customer handed over (each
+ * tap adds up) and the modal shows the change to give back. Entering nothing
+ * is fine — Confirm still finalises the payment.
  */
 export default function CashModal({ total, onConfirm, onClose }: Props) {
   const t = useT()
-  const [given, setGiven] = useState('')
+  const [given, setGiven] = useState(0)
 
-  const givenNum = useMemo(() => {
-    const n = parseFloat(given.replace(',', '.'))
-    return isFinite(n) ? n : NaN
-  }, [given])
-
-  const diff = givenNum - total
-  const hasInput = !isNaN(givenNum)
+  const hasInput = given > 0
+  const diff = given - total
   const short = hasInput && diff < 0
 
-  // suggest round notes/amounts that actually cover the bill
-  const suggestions = NOTES.filter((n) => n >= total)
+  const add = (n: number) => setGiven((g) => Math.round((g + n) * 100) / 100)
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -41,21 +36,19 @@ export default function CashModal({ total, onConfirm, onClose }: Props) {
           <strong>{fmtEur(total)}</strong>
         </div>
 
-        <div className="field">
-          <label>{t('customerGave')}</label>
-          <input
-            className="cash-input"
-            value={given}
-            autoFocus
-            inputMode="decimal"
-            placeholder="0.00"
-            onChange={(e) => setGiven(e.target.value)}
-          />
+        <div className="cash-given">
+          <span className="cash-given-label">{t('customerGave')}</span>
+          <span className="cash-given-value">{hasInput ? fmtEur(given) : '—'}</span>
+          {hasInput && (
+            <button className="cash-clear" onClick={() => setGiven(0)}>
+              {t('clearAmount')}
+            </button>
+          )}
         </div>
 
-        <div className="cash-chips">
-          {suggestions.map((n) => (
-            <button key={n} className="cash-chip" onClick={() => setGiven(String(n))}>
+        <div className="cash-notes">
+          {NOTES.map((n) => (
+            <button key={n} className="cash-note" onClick={() => add(n)}>
               {n} €
             </button>
           ))}

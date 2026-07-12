@@ -29,8 +29,7 @@ interface Props {
   onPaid: (info: PaidInfo) => void
 }
 
-/** Sentinel tab ids for the virtual tabs in the product picker. */
-const FAV = '__fav__'
+/** Sentinel tab id for the virtual "All products" tab in the product picker. */
 const ALL = '__all__'
 
 export default function OrderScreen({
@@ -44,7 +43,6 @@ export default function OrderScreen({
 }: Props) {
   const t = useT()
   const cats = categories.filter((c) => products.some((p) => p.category === c))
-  const favorites = sortProducts(products.filter((p) => p.favorite))
   const [cat, setCat] = useState<Category>(ALL)
   const [moveMode, setMoveMode] = useState(false)
   // productId -> quantity to move (0 = not present). Defaults to the full
@@ -62,17 +60,12 @@ export default function OrderScreen({
 
   // Keep a valid tab selected if the lists change.
   useEffect(() => {
-    const valid =
-      cat === ALL ? products.length > 0 : cat === FAV ? favorites.length > 0 : cats.includes(cat)
-    if (!valid) setCat(favorites.length > 0 ? FAV : cats[0] ?? '')
-  }, [cats, cat, favorites.length, products.length])
+    const valid = cat === ALL ? products.length > 0 : cats.includes(cat)
+    if (!valid) setCat(ALL)
+  }, [cats, cat, products.length])
 
   const shownProducts =
-    cat === ALL
-      ? sortProducts(products)
-      : cat === FAV
-        ? favorites
-        : sortProducts(products.filter((p) => p.category === cat))
+    cat === ALL ? sortProducts(products) : sortProducts(products.filter((p) => p.category === cat))
 
   const total = orderTotal(table.order)
 
@@ -344,15 +337,6 @@ export default function OrderScreen({
             >
               {t('allProducts')}
             </button>
-            {favorites.length > 0 && (
-              <button
-                className={'cat-tab fav' + (cat === FAV ? ' active' : '')}
-                aria-label={t('favorites')}
-                onClick={() => setCat(FAV)}
-              >
-                ★
-              </button>
-            )}
             {cats.map((c) => (
               <button
                 key={c}
@@ -370,7 +354,6 @@ export default function OrderScreen({
                 className="product-btn"
                 onClick={() => dispatch({ type: 'addItem', tableId: table.id, product: p })}
               >
-                {p.favorite && <span className="fav-star">★</span>}
                 <span>{p.name}</span>
                 <span className="price">{fmtEur(p.price)}</span>
               </button>

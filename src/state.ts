@@ -55,7 +55,6 @@ export type Action =
   | { type: 'addProduct'; name: string; price: number; category: Category }
   | { type: 'updateProduct'; product: Product }
   | { type: 'deleteProduct'; id: string }
-  | { type: 'toggleFavorite'; id: string }
   | { type: 'addCategory'; name: string }
   | { type: 'renameCategory'; oldName: string; newName: string }
   | { type: 'deleteCategory'; name: string }
@@ -323,14 +322,6 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'deleteProduct':
       return { ...state, products: state.products.filter((p) => p.id !== action.id) }
-
-    case 'toggleFavorite':
-      return {
-        ...state,
-        products: state.products.map((p) =>
-          p.id === action.id ? { ...p, favorite: !p.favorite } : p
-        ),
-      }
 
     case 'addCategory': {
       const name = action.name.trim()

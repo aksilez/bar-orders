@@ -18,8 +18,7 @@ interface FormState {
   category: Category
 }
 
-/** Sentinel for the virtual "Favorites" category in the sidebar. */
-const FAV = '__fav__'
+/** Sentinel for the virtual "All products" category in the sidebar. */
 const ALL = '__all__'
 
 export default function MenuScreen({ products, categories, dispatch }: Props) {
@@ -31,24 +30,15 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
 
   // Keep a valid category selected as the list changes.
   useEffect(() => {
-    if (
-      selected !== FAV &&
-      selected !== ALL &&
-      !categories.includes(selected) &&
-      categories.length > 0
-    ) {
+    if (selected !== ALL && !categories.includes(selected) && categories.length > 0) {
       setSelected(categories[0])
     }
   }, [categories, selected])
 
-  const isFav = selected === FAV
   const isAll = selected === ALL
-  const virtual = isFav || isAll
-  const shown = isFav
-    ? sortProducts(products.filter((p) => p.favorite))
-    : isAll
-      ? sortProducts(products)
-      : sortProducts(products.filter((p) => p.category === selected))
+  const shown = isAll
+    ? sortProducts(products)
+    : sortProducts(products.filter((p) => p.category === selected))
 
   const parsedPrice = form ? parseFloat(form.price.replace(',', '.')) : NaN
   const formValid =
@@ -58,7 +48,6 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
     if (!form || !formValid) return
     const name = form.name.trim()
     if (form.id) {
-      const original = products.find((p) => p.id === form.id)
       dispatch({
         type: 'updateProduct',
         product: {
@@ -66,7 +55,6 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
           name,
           price: parsedPrice,
           category: form.category,
-          favorite: original?.favorite,
         },
       })
     } else {
@@ -94,12 +82,6 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
           >
             {t('allProducts')}
           </button>
-          <button
-            className={'menu-cat' + (isFav ? ' on' : '')}
-            onClick={() => setSelected(FAV)}
-          >
-            {t('favorites')}
-          </button>
           {categories.map((cat) => (
             <button
               key={cat}
@@ -115,13 +97,13 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
         </aside>
 
         <section className="menu-detail">
-          {categories.length === 0 && !virtual ? (
+          {categories.length === 0 && !isAll ? (
             <div className="empty">{t('emptyCategory')}</div>
           ) : (
             <>
               <div className="detail-head">
-                {virtual ? (
-                  <h2>{isFav ? t('favorites') : t('allProducts')}</h2>
+                {isAll ? (
+                  <h2>{t('allProducts')}</h2>
                 ) : (
                   <button
                     className="cat-title-btn"
@@ -132,7 +114,7 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
                   </button>
                 )}
                 <div className="spacer" />
-                {!isFav && categories.length > 0 && (
+                {categories.length > 0 && (
                   <button
                     className="btn primary"
                     onClick={() =>
@@ -149,7 +131,7 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
               </div>
 
               {shown.length === 0 ? (
-                <div className="empty">{isFav ? t('favEmpty') : t('emptyCategory')}</div>
+                <div className="empty">{t('emptyCategory')}</div>
               ) : (
                 <div className="prod-list">
                   {shown.map((p) => (
@@ -165,16 +147,6 @@ export default function MenuScreen({ products, categories, dispatch }: Props) {
                         })
                       }
                     >
-                      <button
-                        className={'star-btn' + (p.favorite ? ' on' : '')}
-                        aria-label="favorite"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          dispatch({ type: 'toggleFavorite', id: p.id })
-                        }}
-                      >
-                        {p.favorite ? '★' : '☆'}
-                      </button>
                       <span className="name">{p.name}</span>
                       <span className="price">{fmtEur(p.price)}</span>
                       <span className="chev">›</span>
