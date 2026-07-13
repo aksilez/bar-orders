@@ -1804,21 +1804,19 @@ button {
   gap: 20px;
 }
 
-.color-pick {
+/* Needs to beat `.field label { display:block }`, hence the extra class. */
+.color-row .color-pick {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-bottom: 0;
   font-size: 15px;
   color: var(--muted);
 }
 
-.color-pick span {
-  transform: translateY(-6px);
-}
-
 .color-pick input[type='color'] {
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   min-height: 0;
   padding: 0;
   border: none;
