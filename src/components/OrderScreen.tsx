@@ -3,7 +3,7 @@ import type { Category, OrderItem, PaymentMethod, Product, Table } from '../type
 import { fmtEur, orderTotal, sortProducts, uid } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
-import { BookmarkIcon, CardIcon, CashIcon, SelectIcon, SplitIcon } from '../icons'
+import { BookmarkIcon, CardIcon, CashIcon, SearchIcon, SelectIcon, SplitIcon } from '../icons'
 import ConfirmButton from './ConfirmButton'
 import ScrollBox from './ScrollBox'
 import TablePickerModal from './TablePickerModal'
@@ -35,6 +35,11 @@ interface Props {
 /** Sentinel tab id for the virtual "All products" tab in the product picker. */
 const ALL = '__all__'
 
+/** Lowercases and strips diacritics so "boro" matches "Borovička". */
+function norm(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
 export default function OrderScreen({
   table,
   allTables,
@@ -47,6 +52,7 @@ export default function OrderScreen({
   const t = useT()
   const cats = categories.filter((c) => products.some((p) => p.category === c))
   const [cat, setCat] = useState<Category>(ALL)
+  const [query, setQuery] = useState('')
   const [moveMode, setMoveMode] = useState(false)
   // productId -> quantity to move (0 = not present). Defaults to the full
   // quantity when a row is first selected — tap the stepper to move fewer.
@@ -98,8 +104,13 @@ export default function OrderScreen({
     if (!valid) setCat(ALL)
   }, [cats, cat, products.length])
 
-  const shownProducts =
-    cat === ALL ? sortProducts(products) : sortProducts(products.filter((p) => p.category === cat))
+  // Searching always spans all categories so nobody has to switch tabs first.
+  const q = norm(query.trim())
+  const shownProducts = q
+    ? sortProducts(products.filter((p) => norm(p.name).includes(q)))
+    : cat === ALL
+      ? sortProducts(products)
+      : sortProducts(products.filter((p) => p.category === cat))
 
   const total = orderTotal(order)
 
@@ -422,6 +433,28 @@ export default function OrderScreen({
         </section>
 
         <section className="product-picker">
+          <div className="product-search">
+            <SearchIcon size={18} />
+            <input
+              value={query}
+              placeholder={t('searchProducts')}
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              enterKeyHint="done"
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+            />
+            {query && (
+              <button
+                className="search-clear"
+                aria-label={t('clearAmount')}
+                onClick={() => setQuery('')}
+              >
+                ✕
+              </button>
+            )}
+          </div>
           <div className="cat-tabs">
             <button
               className={'cat-tab' + (cat === ALL ? ' active' : '')}
@@ -444,13 +477,19 @@ export default function OrderScreen({
               <button
                 key={p.id}
                 className="product-btn"
-                onClick={() => dispatch({ type: 'addItem', tableId: table.id, product: p, partId })}
+                onClick={() => {
+                  dispatch({ type: 'addItem', tableId: table.id, product: p, partId })
+                  if (q) setQuery('') // found it — next search starts clean
+                }}
               >
                 <span>{p.name}</span>
                 <span className="price">{fmtEur(p.price)}</span>
               </button>
             ))}
             {products.length === 0 && <div className="empty">{t('noProducts')}</div>}
+            {products.length > 0 && q && shownProducts.length === 0 && (
+              <div className="empty">{t('noSearchResults', query.trim())}</div>
+            )}
           </div>
         </section>
       </div>

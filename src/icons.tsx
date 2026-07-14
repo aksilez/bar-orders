@@ -125,6 +125,15 @@ export function CardIcon(props: IconProps) {
   )
 }
 
+export function SearchIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </Svg>
+  )
+}
+
 export function BookmarkIcon(props: IconProps) {
   return (
     <Svg {...props}>
