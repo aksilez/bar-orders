@@ -46,7 +46,12 @@ export default function SplitModal({ table, dispatch, onClose, onSplit }: Props)
         {!isSplit && (
           <div className="field">
             <label>{t('firstPartName')}</label>
-            <input value={firstName} autoFocus onChange={(e) => setFirstName(e.target.value)} />
+            <input
+              value={firstName}
+              autoFocus
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
           </div>
         )}
 
@@ -55,12 +60,24 @@ export default function SplitModal({ table, dispatch, onClose, onSplit }: Props)
           <input
             value={newName}
             autoFocus={isSplit}
+            onFocus={(e) => e.target.select()}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && confirm()}
           />
         </div>
 
         <div className="modal-actions">
+          {isSplit && (
+            <button
+              className="btn danger"
+              onClick={() => {
+                dispatch({ type: 'unsplitTable', tableId: table.id })
+                onClose()
+              }}
+            >
+              {t('mergeSplit')}
+            </button>
+          )}
           <div className="spacer" />
           <button className="btn" onClick={onClose}>
             {t('cancel')}

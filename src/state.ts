@@ -48,6 +48,7 @@ export type Action =
       items: { productId: string; qty: number }[]
     }
   | { type: 'splitTable'; tableId: string; firstName: string; newName: string }
+  | { type: 'unsplitTable'; tableId: string }
   | {
       type: 'markPaid'
       tableId: string
@@ -228,6 +229,20 @@ export function reducer(state: AppState, action: Action): AppState {
       }
       const newPart: TablePart = { id: uid(), name: action.newName, order: [] }
       return mapTable(state, action.tableId, (t) => ({ ...t, parts: [...(t.parts ?? []), newPart] }))
+    }
+
+    case 'unsplitTable': {
+      const table = state.tables.find((t) => t.id === action.tableId)
+      if (!table || !table.parts) return state
+      const merged: OrderItem[] = []
+      for (const part of table.parts) {
+        for (const item of part.order) {
+          const idx = merged.findIndex((m) => m.productId === item.productId)
+          if (idx >= 0) merged[idx] = { ...merged[idx], qty: merged[idx].qty + item.qty }
+          else merged.push({ ...item })
+        }
+      }
+      return mapTable(state, action.tableId, (t) => ({ ...t, parts: undefined, order: merged }))
     }
 
     case 'moveItems': {
