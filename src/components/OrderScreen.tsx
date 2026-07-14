@@ -262,16 +262,27 @@ export default function OrderScreen({
       <div className="order-body">
         <section className="order-left">
           {isSplit && (
-            <div className="part-tabs">
-              {table.parts!.map((p) => (
-                <button
-                  key={p.id}
-                  className={'part-tab' + (p.id === partId ? ' active' : '')}
-                  onClick={() => setActivePartId(p.id)}
-                >
-                  {p.name}
-                </button>
-              ))}
+            <div className="part-bar">
+              <div className="part-tabs">
+                {table.parts!.map((p) => (
+                  <button
+                    key={p.id}
+                    className={'part-tab' + (p.id === partId ? ' active' : '')}
+                    onClick={() => setActivePartId(p.id)}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+              <ConfirmButton
+                className="part-merge"
+                label={
+                  <>
+                    <SplitIcon size={16} /> {t('mergeShort')}
+                  </>
+                }
+                onConfirm={() => dispatch({ type: 'unsplitTable', tableId: table.id })}
+              />
             </div>
           )}
           <ScrollBox>

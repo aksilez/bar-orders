@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { Table } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
-import ConfirmButton from './ConfirmButton'
 
 interface Props {
   table: Table
@@ -77,16 +76,6 @@ export default function SplitModal({ table, dispatch, onClose, onSplit }: Props)
         </div>
 
         <div className="modal-actions">
-          {isSplit && (
-            <ConfirmButton
-              className="btn danger"
-              label={t('mergeSplit')}
-              onConfirm={() => {
-                dispatch({ type: 'unsplitTable', tableId: table.id })
-                onClose()
-              }}
-            />
-          )}
           <div className="spacer" />
           <button className="btn" onClick={onClose}>
             {t('cancel')}
