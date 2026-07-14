@@ -17,6 +17,13 @@ function letter(i: number): string {
   return String.fromCharCode(65 + i)
 }
 
+/** Selects the field's text, deferred so the tap's caret placement doesn't undo it. */
+function selectAll(e: React.FocusEvent<HTMLInputElement>) {
+  const el = e.target
+  el.select()
+  setTimeout(() => el.select(), 0)
+}
+
 /**
  * Splits a table into named parts. The first split names both halves; further
  * splits just name the new part.
@@ -50,7 +57,8 @@ export default function SplitModal({ table, dispatch, onClose, onSplit }: Props)
             <input
               value={firstName}
               autoFocus
-              onFocus={(e) => e.target.select()}
+              onFocus={selectAll}
+              onMouseUp={(e) => e.preventDefault()}
               onChange={(e) => setFirstName(e.target.value)}
             />
           </div>
@@ -61,7 +69,8 @@ export default function SplitModal({ table, dispatch, onClose, onSplit }: Props)
           <input
             value={newName}
             autoFocus={isSplit}
-            onFocus={(e) => e.target.select()}
+            onFocus={selectAll}
+            onMouseUp={(e) => e.preventDefault()}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && confirm()}
           />
