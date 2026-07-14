@@ -55,6 +55,13 @@ export const OBJECT_COLORS = [
   '#f36fa0',
 ]
 
+/** A named sub-bill of a split table. */
+export interface TablePart {
+  id: string
+  name: string
+  order: OrderItem[]
+}
+
 export interface Table {
   id: string
   name: string
@@ -65,7 +72,23 @@ export interface Table {
   /** Size in px, snapped to GRID multiples. */
   w: number
   h: number
+  /** The bill when the table is NOT split. */
   order: OrderItem[]
+  /** When set (≥1 element), the table is split into named parts; `order` is unused. */
+  parts?: TablePart[]
+}
+
+/** All order items on a table, whether split into parts or not. */
+export function tableItems(table: Table): OrderItem[] {
+  return table.parts && table.parts.length ? table.parts.flatMap((p) => p.order) : table.order
+}
+
+export function tableTotal(table: Table): number {
+  return orderTotal(tableItems(table))
+}
+
+export function tableActive(table: Table): boolean {
+  return tableItems(table).length > 0
 }
 
 export type PaymentMethod = 'cash' | 'card'

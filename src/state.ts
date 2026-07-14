@@ -8,6 +8,7 @@ import type {
   PaymentMethod,
   Product,
   Table,
+  TablePart,
 } from './types'
 import {
   DEFAULT_TABLE_H,
@@ -16,6 +17,7 @@ import {
   LINE_THICKNESS,
   OBJECT_COLORS,
   orderTotal,
+  tableItems,
   uid,
 } from './types'
 
@@ -33,23 +35,34 @@ export type Action =
   | { type: 'moveObject'; id: string; x: number; y: number }
   | { type: 'resizeObject'; id: string; w: number; h: number }
   | { type: 'deleteObject'; id: string }
-  | { type: 'addItem'; tableId: string; product: Product }
-  | { type: 'incItem'; tableId: string; productId: string }
-  | { type: 'decItem'; tableId: string; productId: string }
-  | { type: 'removeItem'; tableId: string; productId: string }
+  | { type: 'addItem'; tableId: string; product: Product; partId?: string }
+  | { type: 'incItem'; tableId: string; productId: string; partId?: string }
+  | { type: 'decItem'; tableId: string; productId: string; partId?: string }
+  | { type: 'removeItem'; tableId: string; productId: string; partId?: string }
   | {
       type: 'moveItems'
       fromTableId: string
+      fromPartId?: string
       toTableId: string
+      toPartId?: string
       items: { productId: string; qty: number }[]
     }
-  | { type: 'markPaid'; tableId: string; paidId: string; method: PaymentMethod; tip?: number }
+  | { type: 'splitTable'; tableId: string; firstName: string; newName: string }
+  | {
+      type: 'markPaid'
+      tableId: string
+      paidId: string
+      method: PaymentMethod
+      tip?: number
+      partId?: string
+    }
   | {
       type: 'payItems'
       tableId: string
       paidId: string
       method: PaymentMethod
       tip?: number
+      partId?: string
       items: { productId: string; qty: number }[]
     }
   | { type: 'undoPaid'; paidId: string }
@@ -96,7 +109,7 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'deleteTable': {
       const table = state.tables.find((t) => t.id === action.id)
-      if (!table || table.order.length > 0) return state
+      if (!table || tableItems(table).length > 0) return state
       return { ...state, tables: state.tables.filter((t) => t.id !== action.id) }
     }
 
@@ -163,52 +176,70 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, objects: state.objects.filter((o) => o.id !== action.id) }
 
     case 'addItem':
-      return mapTable(state, action.tableId, (t) => {
-        const existing = t.order.find((i) => i.productId === action.product.id)
-        const order = existing
-          ? t.order.map((i) =>
-              i.productId === action.product.id ? { ...i, qty: i.qty + 1 } : i
-            )
-          : [
-              ...t.order,
-              {
-                productId: action.product.id,
-                name: action.product.name,
-                price: action.product.price,
-                qty: 1,
-              },
-            ]
-        return { ...t, order }
-      })
+      return mapTable(state, action.tableId, (t) =>
+        updateOrder(t, action.partId, (order) => {
+          const existing = order.find((i) => i.productId === action.product.id)
+          return existing
+            ? order.map((i) =>
+                i.productId === action.product.id ? { ...i, qty: i.qty + 1 } : i
+              )
+            : [
+                ...order,
+                {
+                  productId: action.product.id,
+                  name: action.product.name,
+                  price: action.product.price,
+                  qty: 1,
+                },
+              ]
+        })
+      )
 
     case 'incItem':
-      return mapTable(state, action.tableId, (t) => ({
-        ...t,
-        order: t.order.map((i) =>
-          i.productId === action.productId ? { ...i, qty: i.qty + 1 } : i
-        ),
-      }))
+      return mapTable(state, action.tableId, (t) =>
+        updateOrder(t, action.partId, (order) =>
+          order.map((i) => (i.productId === action.productId ? { ...i, qty: i.qty + 1 } : i))
+        )
+      )
 
     case 'decItem':
-      return mapTable(state, action.tableId, (t) => ({
-        ...t,
-        order: t.order
-          .map((i) => (i.productId === action.productId ? { ...i, qty: i.qty - 1 } : i))
-          .filter((i) => i.qty > 0),
-      }))
+      return mapTable(state, action.tableId, (t) =>
+        updateOrder(t, action.partId, (order) =>
+          order
+            .map((i) => (i.productId === action.productId ? { ...i, qty: i.qty - 1 } : i))
+            .filter((i) => i.qty > 0)
+        )
+      )
 
     case 'removeItem':
-      return mapTable(state, action.tableId, (t) => ({
-        ...t,
-        order: t.order.filter((i) => i.productId !== action.productId),
-      }))
+      return mapTable(state, action.tableId, (t) =>
+        updateOrder(t, action.partId, (order) =>
+          order.filter((i) => i.productId !== action.productId)
+        )
+      )
+
+    case 'splitTable': {
+      const table = state.tables.find((t) => t.id === action.tableId)
+      if (!table) return state
+      if (!table.parts || table.parts.length === 0) {
+        const partA: TablePart = { id: uid(), name: action.firstName, order: table.order }
+        const partB: TablePart = { id: uid(), name: action.newName, order: [] }
+        return mapTable(state, action.tableId, (t) => ({ ...t, order: [], parts: [partA, partB] }))
+      }
+      const newPart: TablePart = { id: uid(), name: action.newName, order: [] }
+      return mapTable(state, action.tableId, (t) => ({ ...t, parts: [...(t.parts ?? []), newPart] }))
+    }
 
     case 'moveItems': {
       const from = state.tables.find((t) => t.id === action.fromTableId)
       const to = state.tables.find((t) => t.id === action.toTableId)
-      if (!from || !to || from.id === to.id || action.items.length === 0) return state
-      let fromOrder = [...from.order]
-      const toOrder = [...to.order]
+      if (!from || !to || action.items.length === 0) return state
+      const sameOrder = from.id === to.id && action.fromPartId === action.toPartId
+      if (sameOrder) return state
+      const sameTable = from.id === to.id
+
+      let fromOrder = [...readOrder(from, action.fromPartId)]
+      const toOrder = [...readOrder(sameTable ? from : to, action.toPartId)]
       for (const { productId, qty } of action.items) {
         const idx = fromOrder.findIndex((i) => i.productId === productId)
         if (idx < 0) continue
@@ -226,8 +257,11 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         tables: state.tables.map((t) => {
-          if (t.id === from.id) return { ...t, order: fromOrder }
-          if (t.id === to.id) return { ...t, order: toOrder }
+          if (sameTable && t.id === from.id) {
+            return writeOrder(writeOrder(t, action.fromPartId, fromOrder), action.toPartId, toOrder)
+          }
+          if (t.id === from.id) return writeOrder(t, action.fromPartId, fromOrder)
+          if (t.id === to.id) return writeOrder(t, action.toPartId, toOrder)
           return t
         }),
       }
@@ -235,13 +269,15 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'markPaid': {
       const table = state.tables.find((t) => t.id === action.tableId)
-      if (!table || table.order.length === 0) return state
+      if (!table) return state
+      const order = readOrder(table, action.partId)
+      if (order.length === 0) return state
       const paid: PaidOrder = {
         id: action.paidId,
         tableId: table.id,
-        tableName: table.name,
-        items: table.order,
-        total: orderTotal(table.order),
+        tableName: orderName(table, action.partId),
+        items: order,
+        total: orderTotal(order),
         paidAt: Date.now(),
         method: action.method,
         tip: action.tip && action.tip > 0 ? action.tip : undefined,
@@ -249,17 +285,16 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         history: [...state.history, paid],
-        tables: state.tables.map((t) =>
-          t.id === table.id ? { ...t, order: [] } : t
-        ),
+        tables: state.tables.map((t) => (t.id === table.id ? clearOrder(table, action.partId) : t)),
       }
     }
 
     case 'payItems': {
       const table = state.tables.find((t) => t.id === action.tableId)
       if (!table || action.items.length === 0) return state
+      const order = readOrder(table, action.partId)
       const paidItems: OrderItem[] = []
-      let remaining = [...table.order]
+      let remaining = [...order]
       for (const { productId, qty } of action.items) {
         const item = remaining.find((i) => i.productId === productId)
         if (!item) continue
@@ -275,17 +310,22 @@ export function reducer(state: AppState, action: Action): AppState {
       const paid: PaidOrder = {
         id: action.paidId,
         tableId: table.id,
-        tableName: table.name,
+        tableName: orderName(table, action.partId),
         items: paidItems,
         total: orderTotal(paidItems),
         paidAt: Date.now(),
         method: action.method,
         tip: action.tip && action.tip > 0 ? action.tip : undefined,
       }
+      // if paying the last of a split part empties it, remove the part too
+      const newTable =
+        action.partId && remaining.length === 0
+          ? clearOrder(table, action.partId)
+          : writeOrder(table, action.partId, remaining)
       return {
         ...state,
         history: [...state.history, paid],
-        tables: state.tables.map((t) => (t.id === table.id ? { ...t, order: remaining } : t)),
+        tables: state.tables.map((t) => (t.id === table.id ? newTable : t)),
       }
     }
 
@@ -294,8 +334,9 @@ export function reducer(state: AppState, action: Action): AppState {
       if (!order) return state
       const table = state.tables.find((t) => t.id === order.tableId)
       if (!table) return state
-      // put the items back, merging with anything ordered in the meantime
-      const merged = [...table.order]
+      // put the items back — into the first part if the table is now split
+      const targetPartId = table.parts && table.parts.length ? table.parts[0].id : undefined
+      const merged = [...readOrder(table, targetPartId)]
       for (const item of order.items) {
         const idx = merged.findIndex((m) => m.productId === item.productId)
         if (idx >= 0) merged[idx] = { ...merged[idx], qty: merged[idx].qty + item.qty }
@@ -304,7 +345,9 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         history: state.history.filter((o) => o.id !== action.paidId),
-        tables: state.tables.map((t) => (t.id === table.id ? { ...t, order: merged } : t)),
+        tables: state.tables.map((t) =>
+          t.id === table.id ? writeOrder(t, targetPartId, merged) : t
+        ),
       }
     }
 
@@ -384,6 +427,47 @@ function mapTable(state: AppState, tableId: string, fn: (t: Table) => Table): Ap
     ...state,
     tables: state.tables.map((t) => (t.id === tableId ? fn(t) : t)),
   }
+}
+
+/** Reads the order of a part (if partId given) or the plain table order. */
+function readOrder(t: Table, partId: string | undefined): OrderItem[] {
+  if (partId && t.parts) return t.parts.find((p) => p.id === partId)?.order ?? []
+  return t.order
+}
+
+/** Writes an order back to a part (if partId given) or the plain table order. */
+function writeOrder(t: Table, partId: string | undefined, order: OrderItem[]): Table {
+  if (partId && t.parts) {
+    return { ...t, parts: t.parts.map((p) => (p.id === partId ? { ...p, order } : p)) }
+  }
+  return { ...t, order }
+}
+
+function updateOrder(
+  t: Table,
+  partId: string | undefined,
+  fn: (order: OrderItem[]) => OrderItem[]
+): Table {
+  return writeOrder(t, partId, fn(readOrder(t, partId)))
+}
+
+/**
+ * Empties an order after payment. For a part, removes it; if that leaves a
+ * single part, collapses the table back to a plain (unsplit) table.
+ */
+function clearOrder(t: Table, partId: string | undefined): Table {
+  if (partId && t.parts) {
+    const remaining = t.parts.filter((p) => p.id !== partId)
+    if (remaining.length <= 1) return { ...t, parts: undefined, order: remaining[0]?.order ?? [] }
+    return { ...t, parts: remaining }
+  }
+  return { ...t, order: [] }
+}
+
+/** Name to record in history for a paid order (part name when split). */
+function orderName(t: Table, partId: string | undefined): string {
+  if (partId && t.parts) return t.parts.find((p) => p.id === partId)?.name ?? t.name
+  return t.name
 }
 
 /** Upgrades state saved by older app versions (no categories, no table sizes). */

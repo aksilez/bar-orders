@@ -483,6 +483,51 @@ button {
   font-size: 14px;
 }
 
+.table-split {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--panel-2);
+  border-radius: 8px;
+  padding: 2px 7px;
+}
+
+/* Part switcher inside a split table's order screen. */
+.part-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 10px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.part-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.part-tab {
+  flex-shrink: 0;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.part-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 /* ---------- Order screen ---------- */
 
 @keyframes order-screen-in {

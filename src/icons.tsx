@@ -63,6 +63,18 @@ export function MoveIcon(props: IconProps) {
   )
 }
 
+export function SplitIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 12h6" />
+      <path d="M9 12l4-5h8" />
+      <path d="M9 12l4 5h8" />
+      <path d="M18 4l3 3-3 3" />
+      <path d="M18 14l3 3-3 3" />
+    </Svg>
+  )
+}
+
 export function SelectIcon(props: IconProps) {
   return (
     <Svg {...props}>

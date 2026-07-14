@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { Area, FloorObject, Table } from '../types'
-import { GRID, LINE_THICKNESS, OBJECT_COLORS, fmtEur, orderTotal } from '../types'
+import { GRID, LINE_THICKNESS, OBJECT_COLORS, fmtEur, tableActive, tableTotal } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
 import ConfirmButton from './ConfirmButton'
@@ -437,7 +437,8 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
         })}
 
         {tables.map((tb) => {
-          const active = tb.order.length > 0
+          const active = tableActive(tb)
+          const split = !!tb.parts && tb.parts.length > 0
           return (
             <div
               key={tb.id}
@@ -454,10 +455,11 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
             >
               <div className="table-name">{tb.name}</div>
               {active ? (
-                <div className="table-total">{fmtEur(orderTotal(tb.order))}</div>
+                <div className="table-total">{fmtEur(tableTotal(tb))}</div>
               ) : (
                 <div className="table-free">{t('free')}</div>
               )}
+              {split && <div className="table-split">{t('partsCount', String(tb.parts!.length))}</div>}
               {editMode && resizeHandles('table', tb)}
             </div>
           )
