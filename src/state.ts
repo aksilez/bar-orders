@@ -49,6 +49,7 @@ export type Action =
     }
   | { type: 'splitTable'; tableId: string; firstName: string; newName: string }
   | { type: 'unsplitTable'; tableId: string }
+  | { type: 'setTableStatus'; id: string; reserved: boolean; note: string }
   | {
       type: 'markPaid'
       tableId: string
@@ -178,22 +179,26 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'addItem':
       return mapTable(state, action.tableId, (t) =>
-        updateOrder(t, action.partId, (order) => {
-          const existing = order.find((i) => i.productId === action.product.id)
-          return existing
-            ? order.map((i) =>
-                i.productId === action.product.id ? { ...i, qty: i.qty + 1 } : i
-              )
-            : [
-                ...order,
-                {
-                  productId: action.product.id,
-                  name: action.product.name,
-                  price: action.product.price,
-                  qty: 1,
-                },
-              ]
-        })
+        // guests ordered — an empty reserved table stops being reserved
+        clearReservedIfWasEmpty(
+          t,
+          updateOrder(t, action.partId, (order) => {
+            const existing = order.find((i) => i.productId === action.product.id)
+            return existing
+              ? order.map((i) =>
+                  i.productId === action.product.id ? { ...i, qty: i.qty + 1 } : i
+                )
+              : [
+                  ...order,
+                  {
+                    productId: action.product.id,
+                    name: action.product.name,
+                    price: action.product.price,
+                    qty: 1,
+                  },
+                ]
+          })
+        )
       )
 
     case 'incItem':
@@ -230,6 +235,16 @@ export function reducer(state: AppState, action: Action): AppState {
       const newPart: TablePart = { id: uid(), name: action.newName, order: [] }
       return mapTable(state, action.tableId, (t) => ({ ...t, parts: [...(t.parts ?? []), newPart] }))
     }
+
+    case 'setTableStatus':
+      return {
+        ...state,
+        tables: state.tables.map((t) =>
+          t.id === action.id
+            ? { ...t, reserved: action.reserved || undefined, note: action.note.trim() || undefined }
+            : t
+        ),
+      }
 
     case 'unsplitTable': {
       const table = state.tables.find((t) => t.id === action.tableId)
@@ -276,7 +291,7 @@ export function reducer(state: AppState, action: Action): AppState {
             return writeOrder(writeOrder(t, action.fromPartId, fromOrder), action.toPartId, toOrder)
           }
           if (t.id === from.id) return writeOrder(t, action.fromPartId, fromOrder)
-          if (t.id === to.id) return writeOrder(t, action.toPartId, toOrder)
+          if (t.id === to.id) return clearReservedIfWasEmpty(t, writeOrder(t, action.toPartId, toOrder))
           return t
         }),
       }
@@ -477,6 +492,13 @@ function clearOrder(t: Table, partId: string | undefined): Table {
     return { ...t, parts: remaining }
   }
   return { ...t, order: [] }
+}
+
+/** A reservation is fulfilled once items land on a previously empty table. */
+function clearReservedIfWasEmpty(before: Table, after: Table): Table {
+  return after.reserved && tableItems(before).length === 0
+    ? { ...after, reserved: undefined }
+    : after
 }
 
 /** Name to record in history for a paid order (part name when split). */

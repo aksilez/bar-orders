@@ -3,13 +3,14 @@ import type { Category, OrderItem, PaymentMethod, Product, Table } from '../type
 import { fmtEur, orderTotal, sortProducts, uid } from '../types'
 import type { Action } from '../state'
 import { useT } from '../i18n'
-import { CardIcon, CashIcon, SelectIcon, SplitIcon } from '../icons'
+import { BookmarkIcon, CardIcon, CashIcon, SelectIcon, SplitIcon } from '../icons'
 import ConfirmButton from './ConfirmButton'
 import ScrollBox from './ScrollBox'
 import TablePickerModal from './TablePickerModal'
 import CashModal from './CashModal'
 import CardModal from './CardModal'
 import SplitModal from './SplitModal'
+import TableStatusModal from './TableStatusModal'
 
 /** Which pay flow is active — the whole tab or just the selected items. */
 type PayScope = 'all' | 'selected'
@@ -56,6 +57,7 @@ export default function OrderScreen({
   const [cashFor, setCashFor] = useState<PayScope | null>(null)
   const [cardFor, setCardFor] = useState<PayScope | null>(null)
   const [splitOpen, setSplitOpen] = useState(false)
+  const [statusOpen, setStatusOpen] = useState(false)
 
   // A split table has named parts; otherwise the table has a single order.
   const isSplit = !!table.parts && table.parts.length > 0
@@ -236,8 +238,19 @@ export default function OrderScreen({
   return (
     <div className="order-screen">
       <header className="order-header">
-        <h2>{table.name}</h2>
+        <div className="order-title">
+          <h2>{table.name}</h2>
+          {table.note && <span className="order-note">{table.note}</span>}
+        </div>
         <div className="header-actions">
+          {!moveMode && (
+            <button
+              className={'btn' + (table.reserved ? ' status-active' : '')}
+              onClick={() => setStatusOpen(true)}
+            >
+              <BookmarkIcon size={18} /> {t('statusAction')}
+            </button>
+          )}
           {!moveMode && (
             <button className="btn" onClick={() => setSplitOpen(true)}>
               <SplitIcon size={18} /> {t('splitAction')}
@@ -454,6 +467,10 @@ export default function OrderScreen({
 
       {splitOpen && (
         <SplitModal table={table} dispatch={dispatch} onClose={() => setSplitOpen(false)} />
+      )}
+
+      {statusOpen && (
+        <TableStatusModal table={table} dispatch={dispatch} onClose={() => setStatusOpen(false)} />
       )}
 
       {cashFor && (

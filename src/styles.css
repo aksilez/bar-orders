@@ -16,6 +16,7 @@
   /* Table colours — overridable in Settings (default to the status accents). */
   --table-free: var(--green);
   --table-occupied: var(--amber);
+  --table-reserved: var(--accent);
 }
 
 :root[data-theme='light'] {
@@ -298,6 +299,15 @@ button {
     var(--panel);
 }
 
+.table-card.reserved {
+  border-color: var(--table-reserved);
+  background: linear-gradient(
+      color-mix(in srgb, var(--table-reserved) 12%, transparent),
+      color-mix(in srgb, var(--table-reserved) 12%, transparent)
+    ),
+    var(--panel);
+}
+
 .table-card.editing {
   touch-action: none;
   border-style: dashed;
@@ -483,6 +493,21 @@ button {
   font-size: 14px;
 }
 
+.table-reserved {
+  color: var(--table-reserved);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.table-note {
+  font-size: 12px;
+  color: var(--muted);
+  max-width: calc(100% - 12px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .table-split {
   position: absolute;
   top: 6px;
@@ -590,12 +615,58 @@ button {
   border-bottom: 1px solid var(--border);
 }
 
+.order-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .order-header h2 {
   font-size: 22px;
-  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.order-note {
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The header Status button lights up while the table is reserved. */
+.btn.status-active {
+  color: var(--table-reserved);
+  border-color: var(--table-reserved);
+}
+
+/* Reserved on/off switch inside the table-status dialog. */
+.status-toggle {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 17px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.status-toggle.on {
+  border-color: var(--table-reserved);
+  color: var(--table-reserved);
+  background: linear-gradient(
+      color-mix(in srgb, var(--table-reserved) 12%, transparent),
+      color-mix(in srgb, var(--table-reserved) 12%, transparent)
+    ),
+    var(--panel);
 }
 
 .order-header .header-actions {

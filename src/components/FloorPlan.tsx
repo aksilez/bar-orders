@@ -438,13 +438,14 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
 
         {tables.map((tb) => {
           const active = tableActive(tb)
+          const reserved = !active && !!tb.reserved
           const split = !!tb.parts && tb.parts.length > 0
           return (
             <div
               key={tb.id}
               className={
                 'table-card' +
-                (active ? ' active' : ' free') +
+                (active ? ' active' : reserved ? ' reserved' : ' free') +
                 (editMode ? ' editing' : '') +
                 (draggingId === tb.id ? ' dragging' : '') +
                 (resizingId === tb.id ? ' resizing' : '')
@@ -456,9 +457,12 @@ export default function FloorPlan({ area, tables, objects, editMode, dispatch, o
               <div className="table-name">{tb.name}</div>
               {active ? (
                 <div className="table-total">{fmtEur(tableTotal(tb))}</div>
+              ) : reserved ? (
+                <div className="table-reserved">{t('reserved')}</div>
               ) : (
                 <div className="table-free">{t('free')}</div>
               )}
+              {tb.note && <div className="table-note">{tb.note}</div>}
               {split && <div className="table-split">{t('partsCount', String(tb.parts!.length))}</div>}
               {editMode && resizeHandles('table', tb)}
             </div>

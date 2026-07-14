@@ -76,6 +76,10 @@ export interface Table {
   order: OrderItem[]
   /** When set (≥1 element), the table is split into named parts; `order` is unused. */
   parts?: TablePart[]
+  /** Marked as reserved — cleared automatically when the first items arrive. */
+  reserved?: boolean
+  /** Free-text note shown on the floor plan (e.g. "Reservation 19:00"). */
+  note?: string
 }
 
 /** All order items on a table, whether split into parts or not. */
