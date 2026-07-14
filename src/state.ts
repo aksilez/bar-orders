@@ -49,6 +49,7 @@ export type Action =
     }
   | { type: 'splitTable'; tableId: string; firstName: string; newName: string }
   | { type: 'unsplitTable'; tableId: string }
+  | { type: 'mergeParts'; tableId: string; fromPartId: string; intoPartId: string }
   | { type: 'setTableStatus'; id: string; reserved: boolean; note: string }
   | {
       type: 'markPaid'
@@ -234,6 +235,32 @@ export function reducer(state: AppState, action: Action): AppState {
       }
       const newPart: TablePart = { id: uid(), name: action.newName, order: [] }
       return mapTable(state, action.tableId, (t) => ({ ...t, parts: [...(t.parts ?? []), newPart] }))
+    }
+
+    case 'mergeParts': {
+      const table = state.tables.find((t) => t.id === action.tableId)
+      if (!table || !table.parts) return state
+      const from = table.parts.find((p) => p.id === action.fromPartId)
+      const into = table.parts.find((p) => p.id === action.intoPartId)
+      if (!from || !into || from.id === into.id) return state
+      const merged = [...into.order]
+      for (const item of from.order) {
+        const idx = merged.findIndex((m) => m.productId === item.productId)
+        if (idx >= 0) merged[idx] = { ...merged[idx], qty: merged[idx].qty + item.qty }
+        else merged.push({ ...item })
+      }
+      const remaining = table.parts
+        .filter((p) => p.id !== from.id)
+        .map((p) => (p.id === into.id ? { ...p, order: merged } : p))
+      // a single leftover part collapses back to a plain table
+      if (remaining.length <= 1) {
+        return mapTable(state, table.id, (t) => ({
+          ...t,
+          parts: undefined,
+          order: remaining[0]?.order ?? [],
+        }))
+      }
+      return mapTable(state, table.id, (t) => ({ ...t, parts: remaining }))
     }
 
     case 'setTableStatus':

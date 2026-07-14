@@ -49,6 +49,9 @@ export default function App() {
   const [tableOccupied, setTableOccupied] = useState<string | null>(
     () => localStorage.getItem('bar-orders-table-occupied')
   )
+  const [tableReserved, setTableReserved] = useState<string | null>(
+    () => localStorage.getItem('bar-orders-table-reserved')
+  )
 
   useEffect(() => {
     loadState().then((saved) =>
@@ -90,6 +93,17 @@ export default function App() {
       localStorage.removeItem('bar-orders-table-occupied')
     }
   }, [tableOccupied])
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (tableReserved) {
+      root.style.setProperty('--table-reserved', tableReserved)
+      localStorage.setItem('bar-orders-table-reserved', tableReserved)
+    } else {
+      root.style.removeProperty('--table-reserved')
+      localStorage.removeItem('bar-orders-table-reserved')
+    }
+  }, [tableReserved])
 
   // The undo toast disappears after 6 s.
   useEffect(() => {
@@ -247,12 +261,21 @@ export default function App() {
                     />
                     <span>{t('occupied')}</span>
                   </label>
-                  {(tableFree || tableOccupied) && (
+                  <label className="color-pick">
+                    <input
+                      type="color"
+                      value={tableReserved ?? '#4f8ef7'}
+                      onChange={(e) => setTableReserved(e.target.value)}
+                    />
+                    <span>{t('reserved')}</span>
+                  </label>
+                  {(tableFree || tableOccupied || tableReserved) && (
                     <button
                       className="btn small color-reset"
                       onClick={() => {
                         setTableFree(null)
                         setTableOccupied(null)
+                        setTableReserved(null)
                       }}
                     >
                       {t('resetColors')}

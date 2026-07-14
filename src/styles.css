@@ -639,8 +639,12 @@ button {
 
 /* The header Status button lights up while the table is reserved. */
 .btn.status-active {
-  color: var(--table-reserved);
   border-color: var(--table-reserved);
+}
+
+.btn.status-active svg {
+  color: var(--amber);
+  fill: var(--amber);
 }
 
 /* Reserved on/off switch inside the table-status dialog. */
@@ -659,14 +663,15 @@ button {
   gap: 8px;
 }
 
+/* On = highlighted outline + a solid yellow bookmark; the label keeps its color. */
 .status-toggle.on {
   border-color: var(--table-reserved);
-  color: var(--table-reserved);
-  background: linear-gradient(
-      color-mix(in srgb, var(--table-reserved) 12%, transparent),
-      color-mix(in srgb, var(--table-reserved) 12%, transparent)
-    ),
-    var(--panel);
+  color: var(--text);
+}
+
+.status-toggle.on svg {
+  color: var(--amber);
+  fill: var(--amber);
 }
 
 .order-header .header-actions {

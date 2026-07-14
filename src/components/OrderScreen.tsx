@@ -10,6 +10,7 @@ import TablePickerModal from './TablePickerModal'
 import CashModal from './CashModal'
 import CardModal from './CardModal'
 import SplitModal from './SplitModal'
+import MergeModal from './MergeModal'
 import TableStatusModal from './TableStatusModal'
 
 /** Which pay flow is active — the whole tab or just the selected items. */
@@ -63,6 +64,7 @@ export default function OrderScreen({
   const [cashFor, setCashFor] = useState<PayScope | null>(null)
   const [cardFor, setCardFor] = useState<PayScope | null>(null)
   const [splitOpen, setSplitOpen] = useState(false)
+  const [mergeOpen, setMergeOpen] = useState(false)
   const [statusOpen, setStatusOpen] = useState(false)
 
   // A split table has named parts; otherwise the table has a single order.
@@ -298,15 +300,9 @@ export default function OrderScreen({
                   </button>
                 ))}
               </div>
-              <ConfirmButton
-                className="part-merge"
-                label={
-                  <>
-                    <SplitIcon size={16} /> {t('mergeShort')}
-                  </>
-                }
-                onConfirm={() => dispatch({ type: 'unsplitTable', tableId: table.id })}
-              />
+              <button className="part-merge" onClick={() => setMergeOpen(true)}>
+                <SplitIcon size={16} /> {t('mergeShort')}
+              </button>
             </div>
           )}
           <ScrollBox>
@@ -506,6 +502,15 @@ export default function OrderScreen({
 
       {splitOpen && (
         <SplitModal table={table} dispatch={dispatch} onClose={() => setSplitOpen(false)} />
+      )}
+
+      {mergeOpen && isSplit && partId && (
+        <MergeModal
+          table={table}
+          activePartId={partId}
+          dispatch={dispatch}
+          onClose={() => setMergeOpen(false)}
+        />
       )}
 
       {statusOpen && (
