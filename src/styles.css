@@ -162,6 +162,12 @@ button {
   transition: transform 0.08s ease, filter 0.08s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
+/* Inline icons sit on the text baseline by default — nudge them down so they
+   center on the label (flex buttons ignore this, so it is safe globally). */
+.btn > svg {
+  vertical-align: -3px;
+}
+
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
