@@ -114,9 +114,9 @@ export default function App() {
 
   const t = tFor(lang)
 
-  // Navigate to a screen; Overview + History require the PIN every time.
+  // Navigate to a screen; Menu, Overview + History require the PIN every time.
   function go(id: Screen) {
-    if ((id === 'chart' || id === 'summary') && id !== screen) {
+    if ((id === 'menu' || id === 'chart' || id === 'summary') && id !== screen) {
       setPendingScreen(id)
       return
     }
