@@ -32,15 +32,28 @@ export default function MergeModal({ table, activePartId, dispatch, onClose }: P
 
         <div className="table-pick-list">
           {others.map((p) => (
-            <button key={p.id} className="table-pick-row" onClick={() => mergeOne(p.id)}>
-              <span className="area-badge">{t('part')}</span>
-              <span className="name">{p.name}</span>
-              {p.order.length > 0 ? (
-                <span className="pick-total">{fmtEur(orderTotal(p.order))}</span>
-              ) : (
-                <span className="pick-free">{t('free')}</span>
-              )}
-            </button>
+            <ConfirmButton
+              key={p.id}
+              className="table-pick-row"
+              label={
+                <>
+                  <span className="area-badge">{t('part')}</span>
+                  <span className="name">{p.name}</span>
+                  {p.order.length > 0 ? (
+                    <span className="pick-total">{fmtEur(orderTotal(p.order))}</span>
+                  ) : (
+                    <span className="pick-free">{t('free')}</span>
+                  )}
+                </>
+              }
+              armedLabel={
+                <>
+                  <span className="name">{p.name}</span>
+                  <span className="pick-confirm">{t('tapToConfirm')}</span>
+                </>
+              }
+              onConfirm={() => mergeOne(p.id)}
+            />
           ))}
         </div>
 

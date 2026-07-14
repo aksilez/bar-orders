@@ -904,6 +904,22 @@ button {
   font-size: 14px;
 }
 
+/* Armed state of a merge-picker row — second tap confirms the merge. */
+.table-pick-row.armed {
+  background: var(--red);
+  border-color: var(--red);
+}
+
+.table-pick-row.armed .name,
+.table-pick-row.armed .pick-confirm {
+  color: #fff;
+}
+
+.table-pick-row .pick-confirm {
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
 .order-total {
   display: flex;
   justify-content: space-between;
