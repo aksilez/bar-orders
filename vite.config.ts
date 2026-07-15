@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.png'],
       manifest: {
-        name: 'Bar Orders',
-        short_name: 'Bar Orders',
+        name: 'Dvorec',
+        short_name: 'Dvorec',
         description: 'Offline order tracking for the bar',
         display: 'standalone',
         orientation: 'landscape',
